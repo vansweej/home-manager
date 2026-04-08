@@ -36,6 +36,8 @@ in
 
     ollama
 
+    htop
+
     # # Adds the 'hello' command to your environment. It prints a friendly
     # # "Hello, world!" when run.
     # pkgs.hello
@@ -114,6 +116,15 @@ in
 
   programs.bat = {
     enable = true;
+  };
+
+  programs.bash = {
+    enable = true;
+  };
+
+  programs.starship = {
+    enable = true;
+    enableBashIntegration = true;
   };
 
   programs.ghostty = {
