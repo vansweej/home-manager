@@ -1,4 +1,4 @@
-{ pkgs, inputs, config, ... }:
+{ pkgs, lib, inputs, config, ... }:
 let
     ghostty-nixgl = pkgs.writeShellScriptBin "ghostty-nixgl" ''
     exec ${pkgs.nixgl.nixGLIntel}/bin/nixGLIntel ${pkgs.ghostty}/bin/ghostty "$@"
@@ -113,6 +113,22 @@ in
   home.sessionVariables = {
     # EDITOR = "emacs";
   };
+
+  # Back up the home directory on every activation.
+  # Creates a timestamped snapshot in ~/backups/home using rsync.
+  # Excludes the backup destination itself, Nix store links, and large data dirs.
+  home.activation.backupHome = lib.hm.dag.entryBefore [ "writeBoundary" ] ''
+    backup_dest="$HOME/backups/home/$(date +%Y%m%d_%H%M%S)"
+    $DRY_RUN_CMD ${pkgs.coreutils}/bin/mkdir -p "$backup_dest"
+    $DRY_RUN_CMD ${pkgs.rsync}/bin/rsync -a --delete \
+      --exclude="backups/" \
+      --exclude=".nix-profile" \
+      --exclude=".nix-defexpr" \
+      --exclude=".nix-channels" \
+      --exclude=".cache/" \
+      --exclude=".local/share/Trash/" \
+      "$HOME/" "$backup_dest/"
+  '';
 
   programs.bat = {
     enable = true;
