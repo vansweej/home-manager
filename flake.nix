@@ -18,6 +18,7 @@
       
       pkgs = import nixpkgs {
         inherit system;
+        config.allowUnfree = true;
         config.cudaSupport = true;
         overlays = [
           nixgl.overlay
@@ -26,7 +27,7 @@
 
     in
     {
-      homeConfigurations."nixhero-home" = home-manager.lib.homeManagerConfiguration {
+      homeConfigurations."oryp6" = home-manager.lib.homeManagerConfiguration {
         inherit pkgs;
 
         extraSpecialArgs = {
