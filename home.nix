@@ -148,4 +148,25 @@ in
     enable = true;
     acceleration = "cuda";
   };
+
+  # Pull coding models on login, after ollama is running.
+  # Re-runs on each login but ollama pull is idempotent (skips if up to date).
+  systemd.user.services.ollama-pull-models = {
+    Unit = {
+      Description = "Pull Ollama coding models";
+      After = [ "ollama.service" ];
+      Requires = [ "ollama.service" ];
+    };
+    Service = {
+      Type = "oneshot";
+      ExecStart = pkgs.writeShellScript "ollama-pull-models" ''
+        ${pkgs.ollama}/bin/ollama pull qwen2.5-coder:7b
+        ${pkgs.ollama}/bin/ollama pull deepseek-coder-v2:lite
+      '';
+      RemainAfterExit = true;
+    };
+    Install = {
+      WantedBy = [ "default.target" ];
+    };
+  };
 }
