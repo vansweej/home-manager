@@ -18,6 +18,7 @@
       
       pkgs = import nixpkgs {
         inherit system;
+        config.cudaSupport = true;
         overlays = [
           nixgl.overlay
         ];

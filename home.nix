@@ -32,6 +32,10 @@ in
 
     ghostty-nixgl
 
+    opencode
+
+    ollama
+
     # # Adds the 'hello' command to your environment. It prints a friendly
     # # "Hello, world!" when run.
     # pkgs.hello
@@ -67,6 +71,14 @@ in
       Categories=System;TerminalEmulator;
       StartupWMClass=ghostty
     '';
+
+    ".config/opencode/AGENTS.md".source = ./opencode/AGENTS.md;
+    ".config/opencode/skill/analyst/SKILL.md".source = ./opencode/skill/analyst/SKILL.md;
+    ".config/opencode/skill/architect/SKILL.md".source = ./opencode/skill/architect/SKILL.md;
+    ".config/opencode/skill/documenter/SKILL.md".source = ./opencode/skill/documenter/SKILL.md;
+    ".config/opencode/skill/programmer/SKILL.md".source = ./opencode/skill/programmer/SKILL.md;
+    ".config/opencode/skill/reviewer/SKILL.md".source = ./opencode/skill/reviewer/SKILL.md;
+    ".config/opencode/skill/tester/SKILL.md".source = ./opencode/skill/tester/SKILL.md;
 
     # # Building this configuration will create a copy of 'dotfiles/screenrc' in
     # # the Nix store. Activating the configuration will then make '~/.screenrc' a
@@ -131,4 +143,9 @@ in
 
   # Let Home Manager install and manage itself.
   programs.home-manager.enable = true;
+
+  services.ollama = {
+    enable = true;
+    acceleration = "cuda";
+  };
 }
