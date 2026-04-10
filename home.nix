@@ -82,7 +82,7 @@ in
     ".config/opencode/skill/reviewer/SKILL.md".source = ./opencode/skill/reviewer/SKILL.md;
     ".config/opencode/skill/tester/SKILL.md".source = ./opencode/skill/tester/SKILL.md;
 
-    # Agent profiles: planner (Claude Sonnet) and debugger (DeepSeek) available globally.
+    # Agent profiles: planner (Claude Sonnet via Copilot) and debugger (Qwen3 8B local) available globally.
     ".config/opencode/agents/planner.md".source = ./opencode/agents/planner.md;
     ".config/opencode/agents/debugger.md".source = ./opencode/agents/debugger.md;
 
