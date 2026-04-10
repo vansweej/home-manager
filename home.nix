@@ -86,6 +86,17 @@ in
     ".config/opencode/skill/reviewer/SKILL.md".source = ./opencode/skill/reviewer/SKILL.md;
     ".config/opencode/skill/tester/SKILL.md".source = ./opencode/skill/tester/SKILL.md;
 
+    # Agent profiles: planner (Claude Sonnet) and debugger (DeepSeek) available globally.
+    ".config/opencode/agents/planner.md".source = ./opencode/agents/planner.md;
+    ".config/opencode/agents/debugger.md".source = ./opencode/agents/debugger.md;
+
+    # Ollama provider config and default model for all OpenCode sessions.
+    # Uses mkOutOfStoreSymlink so edits in the repo are reflected immediately
+    # without re-running home-manager switch.
+    ".config/opencode/opencode.json".source =
+      config.lib.file.mkOutOfStoreSymlink
+        "${config.home.homeDirectory}/Projects/ai-coding/opencode/mappings/opencode.json";
+
     # # Building this configuration will create a copy of 'dotfiles/screenrc' in
     # # the Nix store. Activating the configuration will then make '~/.screenrc' a
     # # symlink to the Nix store copy.
@@ -132,6 +143,18 @@ in
       --exclude=".cache/" \
       --exclude=".local/share/Trash/" \
       "$HOME/" "$backup_dest/"
+  '';
+
+  # Clone the ai-coding repo on first activation if it is not already present.
+  # Does not auto-pull -- run `git pull` manually inside the repo when you want
+  # to update. This ensures home-manager switch never fails due to network or
+  # local uncommitted changes.
+  home.activation.cloneAiCoding = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    if [ ! -d "$HOME/Projects/ai-coding" ]; then
+      $DRY_RUN_CMD ${pkgs.git}/bin/git clone \
+        https://github.com/vansweej/ai-coding.git \
+        "$HOME/Projects/ai-coding"
+    fi
   '';
 
   programs.bat = {
