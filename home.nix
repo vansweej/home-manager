@@ -32,10 +32,6 @@ in
 
     ghostty-nixgl
 
-    opencode
-
-    ollama
-
     htop
 
     bun
@@ -129,6 +125,11 @@ in
     # EDITOR = "emacs";
   };
 
+  # Add CLI-installed tools to PATH.
+  home.sessionPath = [
+    "$HOME/.opencode/bin"
+  ];
+
   # Back up the home directory on every activation.
   # Creates a timestamped snapshot in ~/backups/home using rsync.
   # Excludes the backup destination itself, Nix store links, and large data dirs.
@@ -197,30 +198,4 @@ in
 
   # Let Home Manager install and manage itself.
   programs.home-manager.enable = true;
-
-  services.ollama = {
-    enable = true;
-    acceleration = "cuda";
-  };
-
-  # Pull coding models on login, after ollama is running.
-  # Re-runs on each login but ollama pull is idempotent (skips if up to date).
-  systemd.user.services.ollama-pull-models = {
-    Unit = {
-      Description = "Pull Ollama coding models";
-      After = [ "ollama.service" ];
-      Requires = [ "ollama.service" ];
-    };
-    Service = {
-      Type = "oneshot";
-      ExecStart = pkgs.writeShellScript "ollama-pull-models" ''
-        ${pkgs.ollama}/bin/ollama pull qwen2.5-coder:7b
-        ${pkgs.ollama}/bin/ollama pull deepseek-coder-v2:lite
-      '';
-      RemainAfterExit = true;
-    };
-    Install = {
-      WantedBy = [ "default.target" ];
-    };
-  };
 }
