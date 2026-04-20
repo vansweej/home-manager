@@ -38,6 +38,8 @@ in
 
     tree
 
+    docker
+ 
     # # Adds the 'hello' command to your environment. It prints a friendly
     # # "Hello, world!" when run.
     # pkgs.hello
@@ -130,21 +132,6 @@ in
     "$HOME/.opencode/bin"
   ];
 
-  # Back up the home directory on every activation.
-  # Creates a timestamped snapshot in ~/backups/home using rsync.
-  # Excludes the backup destination itself, Nix store links, and large data dirs.
-  home.activation.backupHome = lib.hm.dag.entryBefore [ "writeBoundary" ] ''
-    backup_dest="$HOME/backups/home/$(date +%Y%m%d_%H%M%S)"
-    $DRY_RUN_CMD ${pkgs.coreutils}/bin/mkdir -p "$backup_dest"
-    $DRY_RUN_CMD ${pkgs.rsync}/bin/rsync -a --delete \
-      --exclude="backups/" \
-      --exclude=".nix-profile" \
-      --exclude=".nix-defexpr" \
-      --exclude=".nix-channels" \
-      --exclude=".cache/" \
-      --exclude=".local/share/Trash/" \
-      "$HOME/" "$backup_dest/"
-  '';
 
   # Clone the ai-coding repo on first activation if it is not already present.
   # Does not auto-pull -- run `git pull` manually inside the repo when you want
