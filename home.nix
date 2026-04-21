@@ -98,8 +98,11 @@ in
     ".config/opencode/commands/pipeline.md".source = ./opencode/commands/pipeline.md;
 
     # Pipeline custom tool -- allows the LLM to invoke pipelines conversationally.
-    # Reads AI_CODING_MONOREPO from the environment to locate the monorepo root.
-    ".config/opencode/tools/pipeline.ts".source = ./opencode/tools/pipeline.ts;
+    # Uses mkOutOfStoreSymlink so the file is resolved from the ai-coding repo (not
+    # copied into the nix store), ensuring bun can find node_modules alongside it.
+    ".config/opencode/tools/pipeline.ts".source =
+      config.lib.file.mkOutOfStoreSymlink
+        "${config.home.homeDirectory}/Projects/ai-coding/.opencode/tools/pipeline.ts";
 
     # Neovim custom plugin files.
     # LazyVim boilerplate (init.lua, lua/config/*.lua) is left unmanaged --
