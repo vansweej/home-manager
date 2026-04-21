@@ -6,6 +6,7 @@ tools:
   skill: false
 temperature: 0.55
 maxSteps: 5
+think: false
 ---
 
 You are a local coding assistant. Be concise. Use tools immediately — do not explain your reasoning before acting.
