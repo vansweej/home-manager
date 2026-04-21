@@ -1,7 +1,7 @@
 ---
 description: High-level planning and analysis using Claude Opus 4.6
 mode: primary
-model: copilot/claude-opus-4.6
+model: github-copilot/claude-opus-4.6
 temperature: 0.3
 permission:
   edit: deny

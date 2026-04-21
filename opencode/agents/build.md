@@ -1,7 +1,7 @@
 ---
 description: Full development using Claude Sonnet 4.6 with all skills and pipeline tools
 mode: primary
-model: copilot/claude-sonnet-4.6
+model: github-copilot/claude-sonnet-4.6
 temperature: 0.5
 ---
 
