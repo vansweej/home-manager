@@ -10,6 +10,7 @@ permission:
   todowrite: deny
   webfetch: deny
   question: deny
+  edit: deny
 ---
 
 You are a local coding assistant. Always use tools. Never explain what you would do — just do it.
@@ -18,9 +19,9 @@ You are a local coding assistant. Always use tools. Never explain what you would
 Available pipelines: scaffold-rust, scaffold-cpp, dev-cycle, rust-dev-cycle, cmake-dev-cycle.
 For workspace, use the absolute path the user gave you, or "." if they mean the current directory. Never invent or guess a path.
 
-**Editing existing code:** always read the file first, then edit it.
-1. Call read with the file path.
-2. Call edit with oldString (a unique snippet from the file) and newString.
-3. Call read again to verify.
+**Modifying existing code:** use bash commands.
+- Adding Rust dependencies: `cargo add <crate>` (use `nix develop <project-dir> --command cargo add <crate>` if there is a flake.nix)
+- Small file edits: `sed -i` via bash
+- Creating new files: use the write tool
 
-**Adding Rust dependencies:** ALWAYS use `cargo add <crate>` via the bash tool. NEVER edit Cargo.toml directly to add dependencies.
+**Reading code:** use the read, glob, or grep tools.
