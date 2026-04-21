@@ -91,6 +91,16 @@ in
     ".config/opencode/agents/planner.md".source = ./opencode/agents/planner.md;
     ".config/opencode/agents/debugger.md".source = ./opencode/agents/debugger.md;
 
+    # Pipeline slash commands -- available in all OpenCode sessions globally.
+    # These shell out to `bun run pipeline` in the ai-coding monorepo (AI_CODING_MONOREPO).
+    ".config/opencode/commands/scaffold-rust.md".source = ./opencode/commands/scaffold-rust.md;
+    ".config/opencode/commands/scaffold-cpp.md".source = ./opencode/commands/scaffold-cpp.md;
+    ".config/opencode/commands/pipeline.md".source = ./opencode/commands/pipeline.md;
+
+    # Pipeline custom tool -- allows the LLM to invoke pipelines conversationally.
+    # Reads AI_CODING_MONOREPO from the environment to locate the monorepo root.
+    ".config/opencode/tools/pipeline.ts".source = ./opencode/tools/pipeline.ts;
+
     # Neovim custom plugin files.
     # LazyVim boilerplate (init.lua, lua/config/*.lua) is left unmanaged --
     # bootstrapped once from the LazyVim starter via the activation script below.
@@ -126,8 +136,11 @@ in
   };
 
   # Rootless Docker: point the CLI at the user socket.
+  # AI_CODING_MONOREPO: absolute path to the ai-coding monorepo, used by the
+  # global OpenCode pipeline commands and tool so they work from any directory.
   home.sessionVariables = {
     DOCKER_HOST = "unix:///run/user/1000/docker.sock";
+    AI_CODING_MONOREPO = "${config.home.homeDirectory}/Projects/ai-coding";
   };
 
   # Add CLI-installed tools to PATH.
