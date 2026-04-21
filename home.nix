@@ -200,6 +200,7 @@ in
   programs.bash = {
     enable = true;
     initExtra = ''
+      unset __HM_SESS_VARS_SOURCED
       . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"
     '';
   };
