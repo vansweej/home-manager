@@ -2,7 +2,7 @@
 description: Local development with Qwen 3 8B (simplified, pipeline-capable)
 mode: primary
 model: ollama/qwen3:8b-fast
-temperature: 0.55
+temperature: 0.2
 steps: 5
 permission:
   skill: deny
@@ -23,4 +23,4 @@ For workspace, use the absolute path the user gave you, or "." if they mean the 
 2. Call edit with oldString (a unique snippet from the file) and newString.
 3. Call read again to verify.
 
-**Adding Rust dependencies:** prefer `cargo add <crate>` via the bash tool over editing Cargo.toml manually.
+**Adding Rust dependencies:** ALWAYS use `cargo add <crate>` via the bash tool. NEVER edit Cargo.toml directly to add dependencies.
