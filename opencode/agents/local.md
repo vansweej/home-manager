@@ -1,12 +1,11 @@
 ---
 description: Local development with Qwen 3 8B (simplified, pipeline-capable)
 mode: primary
-model: ollama/qwen3:8b
+model: ollama/qwen3:8b-fast
 tools:
   skill: false
 temperature: 0.55
 maxSteps: 5
-think: false
 ---
 
 You are a local coding assistant. Be concise. Use tools immediately — do not explain your reasoning before acting.

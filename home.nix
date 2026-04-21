@@ -182,6 +182,32 @@ in
     fi
   '';
 
+  # Build derivative Ollama models (e.g. qwen3:8b-fast with thinking disabled).
+  #
+  # Runs ollama/setup.sh from the ai-coding repo on every activation so that
+  # derivative models are always present after a `home-manager switch`.
+  #
+  # The script is fully guarded: it exits cleanly (exit 0) if:
+  #   - ollama is not installed (not in PATH)
+  #   - the ollama daemon is not running (`ollama list` fails)
+  #   - the base model for a derivative has not been pulled yet (per-model skip)
+  #
+  # Fresh machine workflow:
+  #   1. home-manager switch  -- clones ai-coding (above), then tries setup.sh;
+  #      if qwen3:8b is not yet pulled, setup.sh warns and skips the model.
+  #   2. ollama pull qwen3:8b -- pull the base weights (~5 GB, one-time).
+  #   3. home-manager switch  -- setup.sh finds the base model and creates
+  #      qwen3:8b-fast automatically.
+  #
+  # See ~/Projects/ai-coding/docs/ollama-models.md for the full rationale,
+  # model descriptions, and instructions for adding new derivative models.
+  home.activation.ensureOllamaModels = lib.hm.dag.entryAfter [ "cloneAiCoding" ] ''
+    SETUP="$HOME/Projects/ai-coding/ollama/setup.sh"
+    if [ -x "$SETUP" ]; then
+      $DRY_RUN_CMD "$SETUP"
+    fi
+  '';
+
   # Register a user-level systemd service for the rootless Docker daemon.
   systemd.user.services.docker = {
     Unit = {
