@@ -87,13 +87,18 @@ in
     ".config/opencode/skill/reviewer/SKILL.md".source = ./opencode/skill/reviewer/SKILL.md;
     ".config/opencode/skill/tester/SKILL.md".source = ./opencode/skill/tester/SKILL.md;
 
-    # Agent profiles available globally:
-    #   planner  - Claude Sonnet via Copilot, full tooling
-    #   debugger - Qwen3 8B local, read-only debugging
-    #   local    - Qwen3 8B local, primary agent with stripped-down tooling
+    # Primary agents (Tab-switchable in the TUI):
+    #   plan  - Claude Opus 4.6 via Copilot, read-only planning and analysis
+    #   build - Claude Sonnet 4.6 via Copilot, full development with all skills and pipeline
+    #   local - Qwen3 8B local, stripped-down offline/free mode
+    ".config/opencode/agents/plan.md".source = ./opencode/agents/plan.md;
+    ".config/opencode/agents/build.md".source = ./opencode/agents/build.md;
+    ".config/opencode/agents/local.md".source = ./opencode/agents/local.md;
+    # Subagents (delegation targets within any primary agent session):
+    #   planner  - Claude Sonnet 4.6, read-only planning subagent
+    #   debugger - Qwen3 8B, read-only debugging subagent
     ".config/opencode/agents/planner.md".source = ./opencode/agents/planner.md;
     ".config/opencode/agents/debugger.md".source = ./opencode/agents/debugger.md;
-    ".config/opencode/agents/local.md".source = ./opencode/agents/local.md;
 
     # Pipeline slash commands -- available in all OpenCode sessions globally.
     # These shell out to `bun run pipeline` in the ai-coding monorepo (AI_CODING_MONOREPO).
