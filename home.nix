@@ -39,7 +39,10 @@ in
     tree
 
     docker
- 
+
+    slirp4netns   # required by rootless Docker for networking
+    rootlesskit   # required by rootless Docker
+
     # # Adds the 'hello' command to your environment. It prints a friendly
     # # "Hello, world!" when run.
     # pkgs.hello
@@ -88,6 +91,21 @@ in
     ".config/opencode/agents/planner.md".source = ./opencode/agents/planner.md;
     ".config/opencode/agents/debugger.md".source = ./opencode/agents/debugger.md;
 
+    # Neovim custom plugin files.
+    # LazyVim boilerplate (init.lua, lua/config/*.lua) is left unmanaged --
+    # bootstrapped once from the LazyVim starter via the activation script below.
+    # Uses mkOutOfStoreSymlink so edits in the repo are reflected immediately
+    # without re-running home-manager switch.
+    ".config/nvim/lua/plugins/opencode.lua".source =
+      config.lib.file.mkOutOfStoreSymlink
+        "${config.home.homeDirectory}/Projects/home-manager/nvim/plugins/opencode.lua";
+    ".config/nvim/lua/plugins/rust.lua".source =
+      config.lib.file.mkOutOfStoreSymlink
+        "${config.home.homeDirectory}/Projects/home-manager/nvim/plugins/rust.lua";
+    ".config/nvim/lazyvim.json".source =
+      config.lib.file.mkOutOfStoreSymlink
+        "${config.home.homeDirectory}/Projects/home-manager/nvim/lazyvim.json";
+
     # Ollama provider config and default model for all OpenCode sessions.
     # Uses mkOutOfStoreSymlink so edits in the repo are reflected immediately
     # without re-running home-manager switch.
@@ -107,24 +125,9 @@ in
     # '';
   };
 
-  # Home Manager can also manage your environment variables through
-  # 'home.sessionVariables'. These will be explicitly sourced when using a
-  # shell provided by Home Manager. If you don't want to manage your shell
-  # through Home Manager then you have to manually source 'hm-session-vars.sh'
-  # located at either
-  #
-  #  ~/.nix-profile/etc/profile.d/hm-session-vars.sh
-  #
-  # or
-  #
-  #  ~/.local/state/nix/profiles/profile/etc/profile.d/hm-session-vars.sh
-  #
-  # or
-  #
-  #  /etc/profiles/per-user/vansweej/etc/profile.d/hm-session-vars.sh
-  #
+  # Rootless Docker: point the CLI at the user socket.
   home.sessionVariables = {
-    # EDITOR = "emacs";
+    DOCKER_HOST = "unix:///run/user/1000/docker.sock";
   };
 
   # Add CLI-installed tools to PATH.
@@ -132,11 +135,20 @@ in
     "$HOME/.opencode/bin"
   ];
 
+  # Bootstrap LazyVim starter into ~/.config/nvim on first activation.
+  # Strips .git so it becomes a plain directory -- home-manager owns the plugin symlinks.
+  # Does not re-clone if init.lua already exists.
+  home.activation.bootstrapNvim = lib.hm.dag.entryBefore [ "writeBoundary" ] ''
+    if [ ! -f "$HOME/.config/nvim/init.lua" ]; then
+      $DRY_RUN_CMD ${pkgs.git}/bin/git clone \
+        --depth=1 \
+        https://github.com/LazyVim/starter \
+        "$HOME/.config/nvim"
+      $DRY_RUN_CMD rm -rf "$HOME/.config/nvim/.git"
+    fi
+  '';
 
   # Clone the ai-coding repo on first activation if it is not already present.
-  # Does not auto-pull -- run `git pull` manually inside the repo when you want
-  # to update. This ensures home-manager switch never fails due to network or
-  # local uncommitted changes.
   home.activation.cloneAiCoding = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     if [ ! -d "$HOME/Projects/ai-coding" ]; then
       $DRY_RUN_CMD ${pkgs.git}/bin/git clone \
@@ -144,6 +156,26 @@ in
         "$HOME/Projects/ai-coding"
     fi
   '';
+
+  # Register a user-level systemd service for the rootless Docker daemon.
+  systemd.user.services.docker = {
+    Unit = {
+      Description = "Docker Application Container Engine (Rootless)";
+      After = [ "default.target" ];
+    };
+    Service = {
+      Type = "simple";
+      ExecStart = "${pkgs.docker}/bin/dockerd-rootless";
+      Environment = [
+        "PATH=${pkgs.docker}/bin:${pkgs.slirp4netns}/bin:${pkgs.rootlesskit}/bin:/run/wrappers/bin:/usr/bin:/run/current-system/sw/bin"
+      ];
+      Restart = "on-failure";
+      TimeoutStartSec = 0;
+    };
+    Install = {
+      WantedBy = [ "default.target" ];
+    };
+  };
 
   programs.bat = {
     enable = true;
