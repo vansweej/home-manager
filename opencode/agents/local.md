@@ -4,7 +4,6 @@ mode: primary
 model: ollama/qwen3:8b
 tools:
   skill: false
-  pipeline: false
 temperature: 0.55
 ---
 
