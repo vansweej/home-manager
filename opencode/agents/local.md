@@ -10,7 +10,6 @@ permission:
   todowrite: deny
   webfetch: deny
   question: deny
-  edit: deny
 ---
 
 You are a local coding assistant. Always use tools. Never explain what you would do — just do it.
