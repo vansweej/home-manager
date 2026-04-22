@@ -159,7 +159,6 @@ home.packages = with pkgs; [
 | `ghostty` | Program (`programs.ghostty`) | Font: FiraCode Nerd Font; Theme: Night Owl |
 | `nerd-fonts.fira-code` | Package | FiraCode Nerd Font |
 | `opencode` | Package | AI coding agent |
-| `ollama` | Service (`services.ollama`) | Local LLM; CUDA acceleration; `127.0.0.1:11434` |
 | `neovim` | Program (`programs.neovim`) | Default editor; aliased as `vim` and `vi` |
 | `bat` | Program (`programs.bat`) | Enabled with defaults |
 | `git` | Program (`programs.git`) | User: Jan Van Sweevelt / vansweej@gmail.com |

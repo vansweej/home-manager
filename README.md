@@ -6,7 +6,7 @@ Personal [Home Manager](https://github.com/nix-community/home-manager) configura
 
 - **Packages**: ghostty, neovim, bat, starship, bun, docker, git, tree, fonts
 - **Neovim**: custom plugin files (`opencode.lua`, `rust.lua`, `lazyvim.json`) symlinked into `~/.config/nvim/`. LazyVim boilerplate is bootstrapped automatically (see below).
-- **OpenCode**: provider config, agent profiles (planner, debugger), and skill definitions
+- **OpenCode**: provider config, agent profiles (local, debugger), and skill definitions
 - **Shell**: bash + starship prompt
 - **Docker**: rootless daemon via systemd user service
 - **Activation**: clones `ai-coding` repo on first run if not present
@@ -63,7 +63,7 @@ opencode/
   AGENTS.md              -- global coding rules injected into every session
   agents/
     planner.md           -- planning agent (copilot/claude-sonnet-4.6)
-    debugger.md          -- debugging agent (ollama/qwen3:8b)
+    debugger.md          -- debugging agent (github-copilot/claude-sonnet-4.6)
   skill/
     analyst/SKILL.md
     architect/SKILL.md
