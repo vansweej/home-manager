@@ -90,15 +90,19 @@ in
     # Primary agents (Tab-switchable in the TUI):
     #   plan  - Claude Opus 4.6 via Copilot, read-only planning and analysis
     #   build - Claude Sonnet 4.6 via Copilot, full development with all skills and pipeline
-    #   local - Qwen3 8B local, stripped-down offline/free mode
+    #   local - Claude Sonnet 4.6 via Copilot, general-purpose slot for experimentation
     ".config/opencode/agents/plan.md".source = ./opencode/agents/plan.md;
     ".config/opencode/agents/build.md".source = ./opencode/agents/build.md;
     ".config/opencode/agents/local.md".source = ./opencode/agents/local.md;
     # Subagents (delegation targets within any primary agent session):
     #   planner  - Claude Sonnet 4.6, read-only planning subagent
-    #   debugger - Qwen3 8B, read-only debugging subagent
+    #   debugger - Claude Sonnet 4.6, read-only debugging subagent
+    #   reviewer - Claude Sonnet 4.6, read-only code review subagent
+    #   tester   - Claude Sonnet 4.6, test writing subagent (no production file edits)
     ".config/opencode/agents/planner.md".source = ./opencode/agents/planner.md;
     ".config/opencode/agents/debugger.md".source = ./opencode/agents/debugger.md;
+    ".config/opencode/agents/reviewer.md".source = ./opencode/agents/reviewer.md;
+    ".config/opencode/agents/tester.md".source = ./opencode/agents/tester.md;
 
     # Pipeline slash commands -- available in all OpenCode sessions globally.
     # These shell out to `bun run pipeline` in the ai-coding monorepo (AI_CODING_MONOREPO).
@@ -128,8 +132,7 @@ in
       config.lib.file.mkOutOfStoreSymlink
         "${config.home.homeDirectory}/Projects/home-manager/nvim/lazyvim.json";
 
-    # Ollama provider config and default model for all OpenCode sessions.
-    # Uses mkOutOfStoreSymlink so edits in the repo are reflected immediately
+    # OpenCode config -- live symlink so edits in the repo are reflected immediately
     # without re-running home-manager switch.
     ".config/opencode/opencode.json".source =
       config.lib.file.mkOutOfStoreSymlink
