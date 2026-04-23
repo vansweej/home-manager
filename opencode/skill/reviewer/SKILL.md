@@ -44,9 +44,7 @@ Style, minor improvements, optional refactors.
 - Do NOT rewrite entire files unless explicitly asked
 - Flag any missing tests for new functionality
 
-## Rust
+## Language-Specific Rules
 
-- Flag any `unwrap()` or `expect()` in production code (not in tests)
-- Flag `unsafe` blocks missing a safety comment
-- Check for clippy warnings: unnecessary clones, unused results, etc.
-- Verify `cargo tarpaulin` coverage is not regressing below 90%
+For Rust projects, load the `rust` skill. For C++ projects, load the `cpp` skill.
+These provide language-specific review checklists.

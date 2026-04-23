@@ -43,10 +43,7 @@ maintainable code.
 - If requirements are ambiguous, ask before implementing
 - Do not add dependencies without a clear reason
 
-## Rust
+## Language-Specific Rules
 
-- No `unwrap()` or `expect()` in production code — use `?` or handle explicitly
-- Run `cargo fmt` and `cargo clippy` before declaring done; fix all warnings
-- Run `cargo tarpaulin` and target 90% coverage; exclude UI and CUDA functions with `#[cfg(not(tarpaulin_include))]`
-- Prefer `Result<T, E>` / `Option<T>` over panics
-- Avoid unnecessary `clone()` — prefer borrowing
+For Rust projects, load the `rust` skill. For C++ projects, load the `cpp` skill.
+These provide language-specific coding standards, tooling, and coverage rules.

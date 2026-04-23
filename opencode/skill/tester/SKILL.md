@@ -52,9 +52,7 @@ Invalid inputs, failures, exceptions, timeouts.
 - If a test is flaky, fix root cause; do not just add retries
 - Run the full suite before declaring a task complete
 
-## Rust
+## Language-Specific Rules
 
-- Run `cargo tarpaulin` after writing tests; target 90% coverage
-- Exclude UI and CUDA functions from coverage with `#[cfg(not(tarpaulin_include))]`
-- Use `#[cfg(test)]` modules for unit tests; keep integration tests under `tests/`
-- Use `cargo test -- --nocapture` when debugging test output
+For Rust projects, load the `rust` skill. For C++ projects, load the `cpp` skill.
+These provide language-specific testing conventions and coverage targets.
