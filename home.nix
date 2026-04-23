@@ -83,17 +83,20 @@ in
     ".config/opencode/skill/analyst/SKILL.md".source = ./opencode/skill/analyst/SKILL.md;
     ".config/opencode/skill/architect/SKILL.md".source = ./opencode/skill/architect/SKILL.md;
     ".config/opencode/skill/documenter/SKILL.md".source = ./opencode/skill/documenter/SKILL.md;
+    ".config/opencode/skill/explorer/SKILL.md".source = ./opencode/skill/explorer/SKILL.md;
     ".config/opencode/skill/programmer/SKILL.md".source = ./opencode/skill/programmer/SKILL.md;
     ".config/opencode/skill/reviewer/SKILL.md".source = ./opencode/skill/reviewer/SKILL.md;
     ".config/opencode/skill/tester/SKILL.md".source = ./opencode/skill/tester/SKILL.md;
 
     # Primary agents (Tab-switchable in the TUI):
-    #   plan  - Claude Opus 4.6 via Copilot, read-only planning and analysis
-    #   build - Claude Sonnet 4.6 via Copilot, full development with all skills and pipeline
-    #   local - Claude Sonnet 4.6 via Copilot, general-purpose slot for experimentation
+    #   plan    - Claude Opus 4.6 via Copilot, read-only planning and analysis
+    #   build   - Claude Sonnet 4.6 via Copilot, full development with all skills and pipeline
+    #   local   - Claude Sonnet 4.6 via Copilot, general-purpose slot for experimentation
+    #   explore - Claude Sonnet 4.6 via Copilot, read-only codebase exploration and Q&A
     ".config/opencode/agents/plan.md".source = ./opencode/agents/plan.md;
     ".config/opencode/agents/build.md".source = ./opencode/agents/build.md;
     ".config/opencode/agents/local.md".source = ./opencode/agents/local.md;
+    ".config/opencode/agents/explore.md".source = ./opencode/agents/explore.md;
     # Subagents (delegation targets within any primary agent session):
     #   planner  - Claude Sonnet 4.6, read-only planning subagent
     #   debugger - Claude Sonnet 4.6, read-only debugging subagent
