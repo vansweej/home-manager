@@ -93,6 +93,8 @@ return {
           end,
         },
         prompts = {
+          -- Fast prompts: single-shot, no tool calls, inline instructions.
+          -- These are self-contained and respond immediately from the injected context.
           explain = {
             submit = true,
             prompt = [[You are a senior technical analyst. Analyze the following code and produce:
@@ -105,39 +107,7 @@ Back claims with evidence. Distinguish facts from assumptions.
 
 Explain @this and its context
 
-Do NOT call any tools or load any skills. Respond directly.
-
-/no_think]],
-          },
-          review = {
-            submit = true,
-            prompt = [[You are a meticulous code reviewer. Review the following code and report findings grouped by severity:
-
-## Critical (must fix)
-Logic errors, security issues, data loss risks.
-
-## Important (should fix)
-Performance bottlenecks, poor error handling, missing edge cases.
-
-## Suggestions (nice to have)
-Style, naming, minor improvements, optional refactors.
-
-Rules:
-- Be specific: reference exact lines when possible
-- Explain *why* something is a problem
-- Flag missing tests for new functionality
-
-Rust-specific checks:
-- Flag any unwrap() or expect() in production code (not tests)
-- Flag unsafe blocks missing a safety comment
-- Check for unnecessary clones, unused results
-- Verify error handling uses Result<T, E> / Option<T>, not panics
-
-Review @this for correctness and readability
-
-Do NOT call any tools or load any skills. Respond directly.
-
-/no_think]],
+Do NOT call any tools or load any skills. Respond directly.]],
           },
           document = {
             submit = true,
@@ -153,34 +123,7 @@ Rules:
 
 Add comments documenting @this
 
-Do NOT call any tools or load any skills. Respond directly.
-
-/no_think]],
-          },
-          implement = {
-            submit = true,
-            prompt = [[You are a senior software engineer. Implement the following.
-
-Workflow:
-1. Understand the requirement and existing code context
-2. Plan the approach if non-trivial
-3. Implement in small, logical steps
-4. Include error handling and edge cases
-
-Rules:
-- Follow conventions already in the codebase
-- Handle errors explicitly -- no unwrap() or expect() in production code
-- Use Result<T, E> / Option<T> and the ? operator for error propagation
-- Prefer ownership and borrowing over cloning
-- Favor immutability by default
-- Keep functions small and composable
-- Do not add dependencies without clear reason
-
-Implement @this
-
-Do NOT call any tools or load any skills. Respond directly.
-
-/no_think]],
+Do NOT call any tools or load any skills. Respond directly.]],
           },
           optimize = {
             submit = true,
@@ -202,54 +145,7 @@ Rules:
 
 Optimize @this for performance and readability
 
-Do NOT call any tools or load any skills. Respond directly.
-
-/no_think]],
-          },
-          test = {
-            submit = true,
-            prompt = [[You are a quality-focused test engineer. Write tests for the following code.
-
-Structure tests as:
-1. Happy path: core expected behavior under normal conditions
-2. Edge cases: boundary values, empty inputs, max/min
-3. Error paths: invalid inputs, failures, error conditions
-
-Principles:
-- Arrange / Act / Assert structure
-- One logical concern per test
-- Test names describe *behavior*, not implementation
-- Tests must be deterministic and isolated
-
-Rust-specific:
-- Use #[cfg(test)] modules for unit tests
-- Integration tests go under tests/
-- Target 90% coverage with cargo tarpaulin
-- Exclude UI and CUDA functions with #[cfg(not(tarpaulin_include))]
-
-Add tests for @this
-
-Do NOT call any tools or load any skills. Respond directly.
-
-/no_think]],
-          },
-          fix = {
-            submit = true,
-            prompt = [[You are a senior software engineer. Fix the following diagnostics with minimal, targeted changes.
-
-Rules:
-- Identify the root cause before changing code
-- Make the smallest change that fixes the issue
-- Do not refactor unrelated code
-- Handle errors with Result<T, E> / Option<T> and the ? operator
-- No unwrap() or expect() in production code
-- Preserve existing tests; add a new test if the fix covers an untested path
-
-Fix @diagnostics
-
-Do NOT call any tools or load any skills. Respond directly.
-
-/no_think]],
+Do NOT call any tools or load any skills. Respond directly.]],
           },
           diagnostics = {
             submit = true,
@@ -263,38 +159,45 @@ Back claims with evidence. Be specific about file paths and line numbers.
 
 Explain @diagnostics
 
-Do NOT call any tools or load any skills. Respond directly.
+Do NOT call any tools or load any skills. Respond directly.]],
+          },
+          -- Full prompts: tool-aware, delegate to the matching skill.
+          -- These load a skill first, then use tools to gather context before responding.
+          -- Note: write-capable prompts (implement) require the build or local agent.
+          review = {
+            submit = true,
+            prompt = [[Load the reviewer skill. Then review @this for correctness, security, and readability.
 
-/no_think]],
+Report findings grouped by severity: Critical, Important, Suggestions.
+Be specific — reference exact lines when possible.]],
+          },
+          implement = {
+            submit = true,
+            prompt = [[Load the programmer skill. Then implement @this.
+
+Follow conventions already in the codebase. Handle errors and edge cases explicitly.
+Implement in small, logical steps.]],
+          },
+          test = {
+            submit = true,
+            prompt = [[Load the tester skill. Then write tests for @this.
+
+Cover happy path, edge cases, and error paths.
+Run existing tests first to understand current state.]],
+          },
+          fix = {
+            submit = true,
+            prompt = [[Load the debugger skill. Then fix @diagnostics.
+
+Identify the root cause before changing code. Make the smallest change that fixes the issue.
+Verify the fix does not break existing tests.]],
           },
           diff = {
             submit = true,
-            prompt = [[You are a meticulous code reviewer. Review the following git diff and report findings grouped by severity:
+            prompt = [[Load the reviewer skill. Then review the following git diff for correctness and readability: @diff
 
-## Critical (must fix)
-Logic errors, security issues, regressions.
-
-## Important (should fix)
-Performance issues, poor error handling, missing edge cases.
-
-## Suggestions (nice to have)
-Style, naming, minor improvements.
-
-Rules:
-- Focus on changed lines, but consider surrounding context
-- Explain *why* something is a problem
-- Flag missing tests for new functionality
-
-Rust-specific checks:
-- Flag any unwrap() or expect() in production code
-- Flag unsafe blocks missing a safety comment
-- Check for unnecessary clones, unused results
-
-Review the following git diff for correctness and readability: @diff
-
-Do NOT call any tools or load any skills. Respond directly.
-
-/no_think]],
+Report findings grouped by severity: Critical, Important, Suggestions.
+Focus on changed lines, but consider surrounding context. Flag missing tests for new functionality.]],
           },
         },
       }
@@ -302,10 +205,14 @@ Do NOT call any tools or load any skills. Respond directly.
       -- Required for buffer reload when opencode edits files on disk
       vim.o.autoread = true
 
-      -- Ask opencode with @this context (cursor position or visual selection)
-      vim.keymap.set({ "n", "x" }, "<leader>oa", function() require("opencode").ask("@this: ", { submit = true }) end, { desc = "Ask opencode" })
-      -- Open action selector (prompts, commands, server controls)
-      vim.keymap.set({ "n", "x" }, "<leader>os", function() require("opencode").select() end, { desc = "Select opencode action" })
+      -- Ask opencode with @this context (cursor position or visual selection).
+      vim.keymap.set({ "n", "x" }, "<leader>oa", function()
+        require("opencode").ask("@this: ", { submit = true })
+      end, { desc = "Ask opencode" })
+      -- Open action selector (prompts, commands, server controls).
+      vim.keymap.set({ "n", "x" }, "<leader>os", function()
+        require("opencode").select()
+      end, { desc = "Select opencode action" })
       -- Toggle opencode panel
       vim.keymap.set({ "n", "t" }, "<leader>ot", function() require("opencode").toggle() end, { desc = "Toggle opencode" })
 

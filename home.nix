@@ -89,6 +89,7 @@ in
     ".config/opencode/skill/tester/SKILL.md".source = ./opencode/skill/tester/SKILL.md;
     ".config/opencode/skill/rust/SKILL.md".source = ./opencode/skill/rust/SKILL.md;
     ".config/opencode/skill/cpp/SKILL.md".source = ./opencode/skill/cpp/SKILL.md;
+    ".config/opencode/skill/debugger/SKILL.md".source = ./opencode/skill/debugger/SKILL.md;
 
     # Primary agents (Tab-switchable in the TUI):
     #   plan    - Claude Opus 4.6 via Copilot, read-only planning and analysis
