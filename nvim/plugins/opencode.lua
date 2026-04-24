@@ -93,8 +93,8 @@ return {
           end,
         },
         prompts = {
-          -- Fast prompts: single-shot, no tool calls, inline instructions.
-          -- These are self-contained and respond immediately from the injected context.
+          -- Fast prompts: single-shot, no tool calls, respond directly in chat.
+          -- Only explain and diagnostics remain fast; all others load a skill and edit files.
           explain = {
             submit = true,
             prompt = [[You are a senior technical analyst. Analyze the following code and produce:
@@ -111,23 +111,20 @@ Do NOT call any tools or load any skills. Respond directly.]],
           },
           document = {
             submit = true,
-            prompt = [[You are a documentation specialist. Add clear, accurate documentation to the following code.
+            prompt = [[Load the documenter skill. Then add documentation to @this.
 
 Rules:
-- Add doc comments (/// for Rust) to all public items
+- Add doc comments (/// for Rust, /** */ for TypeScript) to all public items
 - Explain *what* and *why*, not *how* (the code shows how)
 - Document parameters, return values, error conditions, and panics
 - Keep comments concise and consistent with the surrounding code
 - Do not invent behavior -- only document what the code actually does
-- If something is unclear, mark it as "needs confirmation"
 
-Add comments documenting @this
-
-Do NOT call any tools or load any skills. Respond directly.]],
+Apply the doc comments directly to the source file.]],
           },
           optimize = {
             submit = true,
-            prompt = [[You are a senior software engineer focused on performance. Optimize the following code.
+            prompt = [[Load the programmer skill. Then optimize @this for performance and readability.
 
 Consider:
 - Unnecessary heap allocations
@@ -141,11 +138,8 @@ Rules:
 - Preserve correctness -- do not sacrifice safety for speed
 - No unwrap() or expect() in production code
 - Use Result<T, E> / Option<T> for error handling
-- Prefer slices over owned collections where possible
 
-Optimize @this for performance and readability
-
-Do NOT call any tools or load any skills. Respond directly.]],
+Apply the optimizations directly to the source file.]],
           },
           diagnostics = {
             submit = true,
@@ -161,9 +155,9 @@ Explain @diagnostics
 
 Do NOT call any tools or load any skills. Respond directly.]],
           },
-          -- Full prompts: tool-aware, delegate to the matching skill.
-          -- These load a skill first, then use tools to gather context before responding.
-          -- Note: write-capable prompts (implement) require the build or local agent.
+          -- Full prompts: tool-aware, load a skill, and apply changes directly to source files.
+          -- Require a write-capable agent (build or local) to edit files.
+          -- Skill mapping: document→documenter, optimize/implement→programmer, review/diff→reviewer, test→tester, fix→debugger.
           review = {
             submit = true,
             prompt = [[Load the reviewer skill. Then review @this for correctness, security, and readability.
