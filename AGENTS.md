@@ -1,22 +1,73 @@
 # Home Manager Configuration — Agent Instructions
 
-Nix flake-based home-manager configuration for user `vansweej` on `x86_64-linux`.
+Nix flake-based home-manager configuration for multiple machines, managed from a
+single repository.
 
 ---
 
 ## Repository Structure
 
 ```
-flake.nix                        # Flake inputs and homeConfigurations output
-home.nix                         # All packages, programs, dotfiles, services
-opencode/AGENTS.md               # Machine-wide OpenCode agent instructions
-opencode/skill/*/SKILL.md        # OpenCode skills deployed to ~/.config/opencode/skill/
-flake.lock                       # Pinned dependency revisions (do not hand-edit)
-.gitignore                       # Ignores: result, result-*, .direnv
+flake.nix                          # mkHome helper and homeConfigurations outputs
+machines/
+  oryp6.nix                        # Metadata: system, username, homeDir, flags (x86_64-linux)
+  m1.nix                           # Metadata: system, username, homeDir, flags (aarch64-darwin)
+modules/
+  common.nix                       # Universal: programs, fonts, dotfiles, activation scripts
+  linux.nix                        # Linux-only: nixGL wrapper, .desktop file
+  darwin.nix                       # macOS-only: placeholder for Darwin-specific config
+  machines/
+    oryp6.nix                      # oryp6-only: rootless Docker, systemd service
+    m1.nix                         # M1-only: placeholder for M1-specific config
+opencode/AGENTS.md                 # Machine-wide OpenCode agent instructions
+opencode/skill/*/SKILL.md          # OpenCode skills deployed to ~/.config/opencode/skill/
+opencode/agents/*.md               # OpenCode agents deployed to ~/.config/opencode/agents/
+opencode/commands/*.md             # OpenCode commands deployed to ~/.config/opencode/commands/
+nvim/                              # Neovim plugin files (symlinked via mkOutOfStoreSymlink)
+flake.lock                         # Pinned dependency revisions (do not hand-edit)
+.gitignore                         # Ignores: result, result-*, .direnv
 ```
 
 There is no `devShell`, `checks`, `packages`, or `apps` output — this is a pure
 home-manager configuration flake.
+
+---
+
+## Module Architecture
+
+Each machine profile is composed from three layers:
+
+```
+common.nix          (all machines)
+    +
+linux.nix           (x86_64-linux machines only)
+  OR
+darwin.nix          (aarch64-darwin machines only)
+    +
+modules/machines/<name>.nix   (that machine only)
+```
+
+Machine identity (`home.username`, `home.homeDirectory`, `home.stateVersion`) is
+injected by the `mkHome` helper in `flake.nix` from the machine metadata file —
+no module hardcodes these values.
+
+### Adding a new machine
+
+1. Create `machines/<name>.nix` with the plain metadata attrset:
+   ```nix
+   {
+     system = "aarch64-darwin";   # or "x86_64-linux"
+     username = "myuser";
+     homeDirectory = "/Users/myuser";
+     stateVersion = "25.11";
+     cudaSupport = false;
+   }
+   ```
+2. Create `modules/machines/<name>.nix` with the machine-specific home-manager module.
+3. Add to `flake.nix`:
+   ```nix
+   homeConfigurations."<name>" = mkHome ./machines/<name>.nix ./modules/machines/<name>.nix;
+   ```
 
 ---
 
@@ -25,13 +76,18 @@ home-manager configuration flake.
 ### Apply the configuration
 
 ```bash
+# oryp6 (Linux)
 home-manager switch --flake .#oryp6
+
+# M1 MacBook
+home-manager switch --flake .#M1
 ```
 
 ### Dry-run / build without activating
 
 ```bash
 nix build .#homeConfigurations.oryp6.activationPackage
+nix build .#homeConfigurations.M1.activationPackage
 ```
 
 ### Check the flake for evaluation errors
@@ -68,8 +124,10 @@ nix fmt
 There are no unit tests in this repository. Validation is done by:
 
 1. `nix flake check` — evaluates the flake without activating
-2. `nix build .#homeConfigurations.oryp6.activationPackage` — full build
+2. `nix build .#homeConfigurations.oryp6.activationPackage` — full build (regression gate)
 3. `home-manager switch --flake .#oryp6` — apply and verify at runtime
+
+Always run step 1 and 2 before committing structural changes.
 
 ---
 
@@ -83,6 +141,8 @@ There are no unit tests in this repository. Validation is done by:
   - `refactor: extract ghostty wrapper into separate file`
 - Never commit `flake.lock` changes alongside functional changes — keep them separate.
 - The `result` and `result-*` symlinks produced by `nix build` are gitignored; never commit them.
+- All new `.nix` files must be `git add`-ed before `nix build` — Nix flakes only
+  see git-tracked files.
 
 ---
 
@@ -139,29 +199,34 @@ home.packages = with pkgs; [
 
 ### Paths
 
-- Always use relative paths for local file references: `./opencode/AGENTS.md`.
-- Never use absolute paths inside `home.nix`.
+- Use relative paths for local file references within the same module directory.
+- Use `../` to reference sibling directories (e.g. `../opencode/AGENTS.md` from
+  inside `modules/`).
+- Never use absolute paths inside any module.
 
 ### Programs and services
 
 - Configure programs via `programs.<name>` attributes, not by writing dotfiles
   manually unless `home.file` is necessary (e.g. for non-program-managed config).
-- Configure background services via `services.<name>`.
+- Configure background services via `services.<name>` (Linux) or `launchd` (Darwin).
+- Never put `systemd` config in `common.nix` or `darwin.nix` — it only belongs in
+  Linux machine modules.
 
 ---
 
 ## Key Packages and Services
 
-| Name | Type | Notes |
-|---|---|---|
-| `ghostty-nixgl` | Custom wrapper | Runs `ghostty` via `nixGLIntel` for OpenGL on non-NixOS |
-| `nixgl.nixGLIntel` | Package | OpenGL wrapper; required for GPU apps outside NixOS |
-| `ghostty` | Program (`programs.ghostty`) | Font: FiraCode Nerd Font; Theme: Night Owl |
-| `nerd-fonts.fira-code` | Package | FiraCode Nerd Font |
-| `opencode` | Package | AI coding agent |
-| `neovim` | Program (`programs.neovim`) | Default editor; aliased as `vim` and `vi` |
-| `bat` | Program (`programs.bat`) | Enabled with defaults |
-| `git` | Program (`programs.git`) | User: Jan Van Sweevelt / vansweej@gmail.com |
+| Name | Type | Module | Notes |
+|---|---|---|---|
+| `ghostty-nixgl` | Custom wrapper | `modules/linux.nix` | Runs `ghostty` via `nixGLIntel`; Linux only |
+| `nixgl.nixGLIntel` | Package | `modules/linux.nix` | OpenGL wrapper; Linux only |
+| `ghostty` | Program (`programs.ghostty`) | `modules/common.nix` | Font: FiraCode Nerd Font; Theme: Night Owl |
+| `nerd-fonts.fira-code` | Package | `modules/common.nix` | FiraCode Nerd Font |
+| `docker` | Package | `modules/machines/oryp6.nix` | Rootless Docker; oryp6 only |
+| `neovim` | Program (`programs.neovim`) | `modules/common.nix` | Default editor; aliased as `vim` and `vi` |
+| `bat` | Program (`programs.bat`) | `modules/common.nix` | Enabled with defaults |
+| `git` | Program (`programs.git`) | `modules/common.nix` | User: Jan Van Sweevelt / vansweej@gmail.com |
+| `systemd docker service` | `systemd.user.services` | `modules/machines/oryp6.nix` | Rootless Docker daemon; oryp6 only |
 
 ---
 
@@ -169,12 +234,12 @@ home.packages = with pkgs; [
 
 | Input | Source | Notes |
 |---|---|---|
-| `nixpkgs` | `github:nixos/nixpkgs/nixos-unstable` | `allowUnfree = true`, `cudaSupport = true` |
+| `nixpkgs` | `github:nixos/nixpkgs/nixos-unstable` | `allowUnfree = true`; `cudaSupport` per machine |
 | `home-manager` | `github:nix-community/home-manager` | Follows the same `nixpkgs` |
-| `nixgl` | `github:guibou/nixGL` | Overlay applied to `pkgs` |
+| `nixgl` | `github:guibou/nixGL` | Overlay applied on Linux only; never on Darwin |
 
-The `nixgl.overlay` is applied when instantiating `pkgs`, making `pkgs.nixgl.*`
-available in `home.nix`.
+The `nixgl.overlay` is conditionally applied in `mkHome` based on `isDarwin`,
+making `pkgs.nixgl.*` available only on Linux builds.
 
 ---
 
@@ -186,19 +251,26 @@ The `opencode/` directory mirrors the XDG deployment target exactly:
 |---|---|
 | `opencode/AGENTS.md` | `~/.config/opencode/AGENTS.md` |
 | `opencode/skill/<name>/SKILL.md` | `~/.config/opencode/skill/<name>/SKILL.md` |
+| `opencode/agents/<name>.md` | `~/.config/opencode/agents/<name>.md` |
+| `opencode/commands/<name>.md` | `~/.config/opencode/commands/<name>.md` |
 
 When adding a new skill, add both the file under `opencode/skill/<name>/SKILL.md`
-and a corresponding `home.file` entry in `home.nix`.
+and a corresponding `home.file` entry in `modules/common.nix`.
 
 ---
 
 ## Common Mistakes to Avoid
 
 - Do **not** edit `flake.lock` by hand — use `nix flake update`.
-- Do **not** set `home.stateVersion` to the current date; it tracks the version at
-  first setup and should remain `"25.11"` unless intentionally migrating.
-- Do **not** use `pkgs.ghostty` directly in `home.packages` — use `ghostty-nixgl`
-  wrapper instead, or hardware acceleration will fail on this non-NixOS system.
+- Do **not** set `home.stateVersion` in any module — it is set by `mkHome` from
+  the machine metadata file.
+- Do **not** set `home.username` or `home.homeDirectory` in any module — same reason.
+- Do **not** use `pkgs.ghostty` directly in `home.packages` on Linux — use the
+  `ghostty-nixgl` wrapper from `linux.nix`, or hardware acceleration will fail.
 - Do **not** add `result` or `result-*` to git; they are gitignored build outputs.
+- Do **not** put `systemd` configuration in `common.nix` or `darwin.nix` — the
+  `systemd` module does not exist on Darwin and will cause evaluation failure.
+- Do **not** forget to `git add` new `.nix` files before running `nix build` —
+  Nix flakes only evaluate git-tracked files.
 - Avoid `home.file` for programs that have a `programs.<name>` home-manager module —
   prefer the structured module so options are type-checked.

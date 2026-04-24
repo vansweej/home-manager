@@ -2,7 +2,6 @@
   description = "Home Manager configuration of vansweej";
 
   inputs = {
-    # Specify the source of Home Manager and Nixpkgs.
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     home-manager = {
       url = "github:nix-community/home-manager";
@@ -14,32 +13,62 @@
   outputs =
     { self, nixpkgs, home-manager, nixgl, ... }@inputs:
     let
-      system = "x86_64-linux";
-      
-      pkgs = import nixpkgs {
-        inherit system;
-        config.allowUnfree = true;
-        config.cudaSupport = true;
-        overlays = [
-          nixgl.overlay
-        ];
-      };
+      # Build a homeManagerConfiguration for a given machine.
+      #
+      # machineMetaPath  - path to a plain Nix attrset file (machines/<name>.nix)
+      #                    containing: system, username, homeDirectory, stateVersion,
+      #                    cudaSupport
+      # machineModulePath - path to the machine-specific home-manager module
+      #                     (modules/machines/<name>.nix)
+      #
+      # The helper:
+      #   1. Imports the metadata (before pkgs exists — no chicken-and-egg)
+      #   2. Derives isDarwin from the system string
+      #   3. Instantiates pkgs with the correct system, cudaSupport, and overlays
+      #   4. Composes: identity inline module + common + platform + machine modules
+      mkHome = machineMetaPath: machineModulePath:
+        let
+          meta = import machineMetaPath;
+          isDarwin = builtins.match ".*-darwin" meta.system != null;
+
+          pkgs = import nixpkgs {
+            system = meta.system;
+            config.allowUnfree = true;
+            config.cudaSupport = meta.cudaSupport;
+            # nixGL is Linux-only; applying its overlay on Darwin causes eval errors.
+            overlays = if isDarwin then [] else [ nixgl.overlay ];
+          };
+        in
+        home-manager.lib.homeManagerConfiguration {
+          inherit pkgs;
+
+          extraSpecialArgs = {
+            inherit inputs meta;
+          };
+
+          modules = [
+            # Per-machine identity — derived from the metadata file so no module
+            # needs to hardcode username, homeDirectory, or stateVersion.
+            {
+              home.username = meta.username;
+              home.homeDirectory = meta.homeDirectory;
+              home.stateVersion = meta.stateVersion;
+            }
+
+            # Universal configuration shared by all machines.
+            ./modules/common.nix
+          ]
+          # Platform module: Linux gets nixGL + .desktop; Darwin gets macOS defaults.
+          ++ (if isDarwin
+              then [ ./modules/darwin.nix ]
+              else [ ./modules/linux.nix ])
+          # Machine-specific module: Docker/systemd on oryp6, local models on M5, etc.
+          ++ [ machineModulePath ];
+        };
 
     in
     {
-      homeConfigurations."oryp6" = home-manager.lib.homeManagerConfiguration {
-        inherit pkgs;
-
-        extraSpecialArgs = {
-          inherit inputs;
-        };
-
-        # Specify your home configuration modules here, for example,
-        # the path to your home.nix.
-        modules = [ ./home.nix ];
-
-        # Optionally use extraSpecialArgs
-        # to pass through arguments to home.nix
-      };
+      homeConfigurations."oryp6" = mkHome ./machines/oryp6.nix ./modules/machines/oryp6.nix;
+      homeConfigurations."M1"    = mkHome ./machines/m1.nix    ./modules/machines/m1.nix;
     };
 }
