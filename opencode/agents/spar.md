@@ -22,6 +22,11 @@ they don't yet know about their own idea.
 
 When given a feature idea:
 
+0. **Check for prior brainstorming context** -- if `.brainstorm/brief.md` exists
+   in the project root or current directory, read it; it may contain the chosen
+   idea, explored alternatives, and open questions from a prior brainstorming
+   session. Incorporate what is useful, but do not depend on it -- most sparring
+   sessions start without one.
 1. **Read the code first** -- explore relevant files, types, and dependencies
    before forming any opinion; cite exact file paths and line numbers when
    referencing code
