@@ -78,11 +78,6 @@
     # bootstrapped once from the LazyVim starter via the activation script below.
     # Uses mkOutOfStoreSymlink so edits in the repo are reflected immediately
     # without re-running home-manager switch.
-    # Neovim custom plugin files.
-    # LazyVim boilerplate (init.lua, lua/config/*.lua) is left unmanaged --
-    # bootstrapped once from the LazyVim starter via the activation script below.
-    # Uses mkOutOfStoreSymlink so edits in the repo are reflected immediately
-    # without re-running home-manager switch.
     ".config/nvim/lua/plugins/opencode.lua".source =
       config.lib.file.mkOutOfStoreSymlink
         "${config.home.homeDirectory}/Projects/home-manager/nvim/plugins/opencode.lua";
