@@ -96,11 +96,13 @@ in
     #   local   - Claude Sonnet 4.6 via Copilot, general-purpose slot for experimentation
     #   explore - Claude Sonnet 4.6 via Copilot, read-only codebase exploration and Q&A
     #   spar    - Claude Opus 4.6 via Copilot, Socratic sparring partner for feature discussions
+    #   teach   - Claude Opus 4.6 via Copilot, adaptive tutor grounded in project context
     ".config/opencode/agents/plan.md".source = ./opencode/agents/plan.md;
     ".config/opencode/agents/build.md".source = ./opencode/agents/build.md;
     ".config/opencode/agents/local.md".source = ./opencode/agents/local.md;
     ".config/opencode/agents/explore.md".source = ./opencode/agents/explore.md;
     ".config/opencode/agents/spar.md".source = ./opencode/agents/spar.md;
+    ".config/opencode/agents/teach.md".source = ./opencode/agents/teach.md;
     # Subagents (delegation targets within any primary agent session):
     #   planner  - Claude Sonnet 4.6, read-only planning subagent
     #   debugger - Claude Sonnet 4.6, read-only debugging subagent
