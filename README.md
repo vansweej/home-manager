@@ -1,86 +1,82 @@
 # home-manager
 
-Personal [Home Manager](https://github.com/nix-community/home-manager) configuration for `oryp6` (x86_64-linux).
+Personal [Home Manager](https://github.com/nix-community/home-manager) configuration
+for multiple machines, managed from a single repository.
+
+| Profile | Machine | OS |
+|---|---|---|
+| `oryp6` | Oryx Pro 6 | x86_64-linux |
+| `M1` | MacBook (work) | aarch64-darwin |
 
 ## What this manages
 
-- **Packages**: ghostty, neovim, bat, starship, bun, docker, git, tree, fonts
-- **Neovim**: custom plugin files (`opencode.lua`, `rust.lua`, `lazyvim.json`) symlinked into `~/.config/nvim/`. LazyVim boilerplate is bootstrapped automatically (see below).
-- **OpenCode**: provider config, agent profiles (local, debugger), and skill definitions
-- **Shell**: bash + starship prompt
-- **Docker**: rootless daemon via systemd user service
-- **Activation**: clones `ai-coding` repo on first run if not present
+- **Packages** — ghostty, neovim, bat, starship, bun, htop, tree, fonts
+- **Shell** — bash + starship prompt
+- **Neovim** — LazyVim bootstrapped on first run; custom plugin files symlinked live
+- **OpenCode** — agent profiles, skill definitions, pipeline commands and tool
+- **Docker** — rootless daemon via systemd user service (oryp6 only)
+- **Fonts** — FiraCode Nerd Font
+- **Activation** — clones `ai-coding` repo on first run if not present
 
-## Fresh machine setup
+## Quick start
 
 ### Prerequisites
 
 - Nix installed with flakes enabled
-- Home Manager installed (`nix-channel` or standalone)
-- SSH key added to GitHub (for the clone step)
+- Home Manager installed (standalone)
+- Internet access (clones two repos on first activation)
 
-### Steps
+### oryp6 (Linux)
 
 ```bash
-# 1. Clone this repo
 git clone git@github.com:vansweej/home-manager.git ~/Projects/home-manager
-
-# 2. Run home-manager switch
-#    This will:
-#      - Install all packages
-#      - Bootstrap ~/.config/nvim from the LazyVim starter (strips .git)
-#      - Symlink nvim plugin files from this repo into ~/.config/nvim/
-#      - Symlink OpenCode config files
-#      - Clone the ai-coding repo into ~/Projects/ai-coding
 home-manager switch --flake ~/Projects/home-manager#oryp6
+```
 
-# 3. Open Neovim -- LazyVim bootstraps lazy.nvim and all plugins automatically
+### M1 MacBook (macOS)
+
+```bash
+git clone git@github.com:vansweej/home-manager.git ~/Projects/home-manager
+home-manager switch --flake ~/Projects/home-manager#M1
+```
+
+On first activation, the following happen automatically:
+
+1. `~/Projects/ai-coding` is cloned from GitHub
+2. `~/.config/nvim` is bootstrapped from the LazyVim starter
+3. All packages, dotfiles, and symlinks are installed
+
+Open Neovim after activation — LazyVim bootstraps plugins automatically:
+
+```bash
 nvim
 ```
 
-That's it. No manual cloning of LazyVim or plugin setup required.
-
-## Editing Neovim config
-
-Custom plugin files live in `nvim/plugins/`. Edits are reflected in Neovim immediately -- no need to re-run `home-manager switch`.
-
-```
-nvim/
-  plugins/
-    opencode.lua   -- OpenCode integration (prompts, contexts, keymaps)
-    rust.lua       -- Rust LSP config (disables mason for rust_analyzer)
-  lazyvim.json     -- LazyVim extras selection
-```
-
-LazyVim boilerplate (`init.lua`, `lua/config/*.lua`) lives in `~/.config/nvim/` as unmanaged plain files and is not tracked here.
-
-## Editing OpenCode config
-
-OpenCode files live in `opencode/`:
-
-```
-opencode/
-  AGENTS.md              -- global coding rules injected into every session
-  agents/
-    planner.md           -- planning agent (copilot/claude-sonnet-4.6)
-    debugger.md          -- debugging agent (github-copilot/claude-sonnet-4.6)
-  skill/
-    analyst/SKILL.md
-    architect/SKILL.md
-    documenter/SKILL.md
-    programmer/SKILL.md
-    reviewer/SKILL.md
-    tester/SKILL.md
-```
-
-The `opencode.json` provider config lives in `~/Projects/ai-coding/opencode/mappings/opencode.json` and is symlinked from there (separate repo, live edits).
-
 ## Applying changes
 
-After editing `home.nix` or any file managed by the Nix store (i.e. not via `mkOutOfStoreSymlink`):
+After editing any Nix-managed file:
 
 ```bash
+# Linux
 home-manager switch --flake ~/Projects/home-manager#oryp6
+
+# macOS
+home-manager switch --flake ~/Projects/home-manager#M1
 ```
 
-Files managed with `mkOutOfStoreSymlink` (nvim plugins, opencode.json) are live immediately without re-running switch.
+Files managed with `mkOutOfStoreSymlink` (nvim plugins, `opencode.json`) update
+immediately without re-running switch.
+
+## Validate without activating
+
+```bash
+nix flake check
+nix build .#homeConfigurations.oryp6.activationPackage
+nix build .#homeConfigurations.M1.activationPackage
+```
+
+## Further reading
+
+- [Architecture](docs/architecture.md) — module layers, flake design, `mkHome` helper
+- [Adding a machine](docs/adding-a-machine.md) — step-by-step guide
+- [What each module manages](docs/modules.md) — reference for `common`, `linux`, `darwin`, and machine modules
