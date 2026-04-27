@@ -68,7 +68,8 @@
 
     in
     {
-      homeConfigurations."oryp6" = mkHome ./machines/oryp6.nix ./modules/machines/oryp6.nix;
-      homeConfigurations."M1"    = mkHome ./machines/m1.nix    ./modules/machines/m1.nix;
+      homeConfigurations."oryp6"     = mkHome ./machines/oryp6.nix    ./modules/machines/oryp6.nix;
+      homeConfigurations."M1"        = mkHome ./machines/m1.nix       ./modules/machines/m1.nix;
+      homeConfigurations."parallels" = mkHome ./machines/parallels.nix ./modules/machines/parallels.nix;
     };
 }
