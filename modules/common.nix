@@ -124,7 +124,7 @@
   home.activation.installOpenCodeDeps =
     lib.hm.dag.entryBetween [ "writeBoundary" ] [ "cloneAiCoding" ] ''
       if [ -f "$HOME/Projects/ai-coding/.opencode/package.json" ]; then
-        $DRY_RUN_CMD ${pkgs.bun}/bin/bun install --frozen-lockfile \
+        $DRY_RUN_CMD ${pkgs.bun}/bin/bun install \
           --cwd "$HOME/Projects/ai-coding/.opencode"
       fi
     '';
