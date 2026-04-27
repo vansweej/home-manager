@@ -118,6 +118,17 @@
     fi
   '';
 
+  # Install OpenCode tool dependencies (e.g. @opencode-ai/plugin) so that
+  # pipeline.ts can resolve its imports on a fresh clone. Runs after cloneAiCoding
+  # to ensure the repo is present, and before writeBoundary so symlinks are valid.
+  home.activation.installOpenCodeDeps =
+    lib.hm.dag.entryBetween [ "writeBoundary" ] [ "cloneAiCoding" ] ''
+      if [ -f "$HOME/Projects/ai-coding/.opencode/package.json" ]; then
+        $DRY_RUN_CMD ${pkgs.bun}/bin/bun install --frozen-lockfile \
+          --cwd "$HOME/Projects/ai-coding/.opencode"
+      fi
+    '';
+
   # Bootstrap LazyVim starter into ~/.config/nvim on first activation.
   # Strips .git so it becomes a plain directory -- home-manager owns the plugin symlinks.
   # Does not re-clone if init.lua already exists.
