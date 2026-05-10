@@ -8,8 +8,8 @@
 #
 # Agents, skills, commands, and tools are auto-discovered from the opencode/
 # directory structure — no manual updates needed when files are added or removed.
-# Tool implementations are always copied from the ai-coding repo (authoritative
-# source); opencode/tools/*.ts are marker files only.
+# Tool implementations live in opencode/tools/ (self-contained; no ai-coding
+# dependency). opencode.json is the one file still sourced from the ai-coding repo.
 #
 # Usage:
 #   ./generate-tarball.sh          # produce opencode-setup-YYYY-MM-DD.tar.gz
@@ -77,7 +77,7 @@ BUN_VERSION="$(bun --version)"
 info "Using bun $BUN_VERSION"
 
 # ---------------------------------------------------------------------------
-# Ensure ai-coding repo is present
+# Ensure ai-coding repo is present (needed for opencode.json config only)
 # ---------------------------------------------------------------------------
 
 if [ ! -d "$AI_CODING_DIR" ]; then
@@ -95,16 +95,16 @@ fi
 # Agents: all *.md files under opencode/agents/
 mapfile -t AGENTS < <(find "$OPENCODE_SRC/agents" -maxdepth 1 -name '*.md' -type f | sort)
 
-# Skills: all subdirectories under opencode/skill/ that contain a SKILL.md
-mapfile -t SKILLS < <(find "$OPENCODE_SRC/skill" -maxdepth 2 -name 'SKILL.md' -type f | sort)
+# Skills: all subdirectories under opencode/skills/ that contain a SKILL.md
+mapfile -t SKILLS < <(find "$OPENCODE_SRC/skills" -maxdepth 2 -name 'SKILL.md' -type f | sort)
 
 # Commands: all *.md files under opencode/commands/
 mapfile -t COMMANDS < <(find "$OPENCODE_SRC/commands" -maxdepth 1 -name '*.md' -type f | sort)
 
-# Tools: all *.ts marker files under opencode/tools/ — real source is in ai-coding
-mapfile -t TOOL_MARKERS < <(find "$OPENCODE_SRC/tools" -maxdepth 1 -name '*.ts' -type f | sort)
+# Tools: all *.ts files under opencode/tools/ — self-contained source, no ai-coding dependency
+mapfile -t TOOLS < <(find "$OPENCODE_SRC/tools" -maxdepth 1 -name '*.ts' -type f | sort)
 
-info "Discovered: ${#AGENTS[@]} agent(s), ${#SKILLS[@]} skill(s), ${#COMMANDS[@]} command(s), ${#TOOL_MARKERS[@]} tool(s)"
+info "Discovered: ${#AGENTS[@]} agent(s), ${#SKILLS[@]} skill(s), ${#COMMANDS[@]} command(s), ${#TOOLS[@]} tool(s)"
 
 # ---------------------------------------------------------------------------
 # Validate expected source files
@@ -112,25 +112,24 @@ info "Discovered: ${#AGENTS[@]} agent(s), ${#SKILLS[@]} skill(s), ${#COMMANDS[@]
 
 MISSING=()
 
-[ -f "$OPENCODE_SRC/AGENTS.md" ]   || MISSING+=("opencode/AGENTS.md")
+[ -f "$OPENCODE_SRC/AGENTS.md" ]    || MISSING+=("opencode/AGENTS.md")
 [ -f "$OPENCODE_SRC/package.json" ] || MISSING+=("opencode/package.json")
+[ -f "$OPENCODE_SRC/bun.lock" ]     || MISSING+=("opencode/bun.lock")
 
 for agent in "${AGENTS[@]}"; do
   [ -f "$agent" ] || MISSING+=("agents/$(basename "$agent")")
 done
 
 for skill in "${SKILLS[@]}"; do
-  [ -f "$skill" ] || MISSING+=("skill/$(basename "$(dirname "$skill")")/SKILL.md")
+  [ -f "$skill" ] || MISSING+=("skills/$(basename "$(dirname "$skill")")/SKILL.md")
 done
 
 for cmd in "${COMMANDS[@]}"; do
   [ -f "$cmd" ] || MISSING+=("commands/$(basename "$cmd")")
 done
 
-for marker in "${TOOL_MARKERS[@]}"; do
-  name="$(basename "$marker")"
-  [ -f "$AI_CODING_DIR/.opencode/tools/$name" ] \
-    || MISSING+=("ai-coding/.opencode/tools/$name")
+for tool in "${TOOLS[@]}"; do
+  [ -f "$tool" ] || MISSING+=("tools/$(basename "$tool")")
 done
 
 [ -f "$AI_CODING_DIR/opencode/mappings/opencode.json" ] \
@@ -160,7 +159,7 @@ mkdir -p \
 # Create skill subdirectories dynamically
 for skill in "${SKILLS[@]}"; do
   skill_name="$(basename "$(dirname "$skill")")"
-  mkdir -p "$TARGET/skill/$skill_name"
+  mkdir -p "$TARGET/skills/$skill_name"
 done
 
 info "Staging directory created at $STAGING"
@@ -169,9 +168,10 @@ info "Staging directory created at $STAGING"
 # Copy files from home-manager/opencode/
 # ---------------------------------------------------------------------------
 
-info "Copying AGENTS.md, package.json..."
+info "Copying AGENTS.md, package.json, bun.lock..."
 cp "$OPENCODE_SRC/AGENTS.md"    "$TARGET/"
 cp "$OPENCODE_SRC/package.json" "$TARGET/"
+cp "$OPENCODE_SRC/bun.lock"     "$TARGET/"
 
 info "Copying ${#AGENTS[@]} agent(s)..."
 for agent in "${AGENTS[@]}"; do
@@ -181,7 +181,7 @@ done
 info "Copying ${#SKILLS[@]} skill(s)..."
 for skill in "${SKILLS[@]}"; do
   skill_name="$(basename "$(dirname "$skill")")"
-  cp "$skill" "$TARGET/skill/$skill_name/"
+  cp "$skill" "$TARGET/skills/$skill_name/"
 done
 
 info "Copying ${#COMMANDS[@]} command(s)..."
@@ -190,14 +190,13 @@ for cmd in "${COMMANDS[@]}"; do
 done
 
 # ---------------------------------------------------------------------------
-# Copy tool implementations from ai-coding/
-# (marker files in opencode/tools/ identify which tools; ai-coding is authoritative)
+# Copy tool implementations from opencode/tools/
+# (self-contained source — no ai-coding dependency)
 # ---------------------------------------------------------------------------
 
-info "Copying ${#TOOL_MARKERS[@]} tool(s) from ai-coding..."
-for marker in "${TOOL_MARKERS[@]}"; do
-  name="$(basename "$marker")"
-  cp "$AI_CODING_DIR/.opencode/tools/$name" "$TARGET/tools/"
+info "Copying ${#TOOLS[@]} tool(s)..."
+for tool in "${TOOLS[@]}"; do
+  cp "$tool" "$TARGET/tools/"
 done
 
 info "Copying opencode.json from ai-coding..."
@@ -231,8 +230,8 @@ for cmd in "${COMMANDS[@]}"; do
 done
 
 TOOL_NAMES=()
-for marker in "${TOOL_MARKERS[@]}"; do
-  TOOL_NAMES+=("$(basename "$marker" .ts)")
+for tool in "${TOOLS[@]}"; do
+  TOOL_NAMES+=("$(basename "$tool" .ts)")
 done
 
 join_comma() {
