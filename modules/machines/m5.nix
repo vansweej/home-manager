@@ -26,6 +26,11 @@ let
       };
     };
     model = "github-copilot/claude-sonnet-4.6";
+    compaction = {
+      auto = true;
+      prune = true;
+      reserved = 10000;
+    };
   };
 
   # M5-specific local agent.
