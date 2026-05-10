@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Index a git repository for semantic codebase search.
+#
+# Usage:
+#   index-codebase                        # index current directory
+#   index-codebase <repo-path>            # index a specific repo
+#   index-codebase [--force] [--ttl <n>]  # flags forwarded to the CLI
+#   index-codebase --purge-only           # purge only, no repo path needed
+#
+# All flags are forwarded verbatim to:
+#   bun run index-codebase <repo-path> [flags]
+#
+# Requires AI_CODING_MONOREPO to be set (done globally by Home Manager).
+
+set -euo pipefail
+
+monorepo="${AI_CODING_MONOREPO:?AI_CODING_MONOREPO is not set — run: home-manager switch}"
+
+# --purge-only needs no repo path — forward everything as-is
+for arg in "$@"; do
+  if [[ "$arg" == "--purge-only" ]]; then
+    exec bun run --cwd "$monorepo" index-codebase "$@"
+  fi
+done
+
+# No positional arg, or first arg is a flag → prepend current directory
+if [[ $# -eq 0 ]] || [[ "$1" == --* ]]; then
+  exec bun run --cwd "$monorepo" index-codebase "$PWD" "$@"
+fi
+
+# First arg is the repo path — resolve to absolute before forwarding
+repo="$(cd "$1" && pwd)"
+shift
+exec bun run --cwd "$monorepo" index-codebase "$repo" "$@"

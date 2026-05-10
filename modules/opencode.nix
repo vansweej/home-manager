@@ -52,6 +52,21 @@ let
           "${config.home.homeDirectory}/Projects/home-manager/opencode/tools/${name}"; }
   ) (lib.filterAttrs (n: t: t == "regular" && lib.hasSuffix ".ts" n) toolFiles);
 
+  # ── Auto-discover CLI wrapper scripts ───────────────────────────────────────
+  # Every file in opencode/bin/ is deployed to ~/.local/bin/ as a nix-store
+  # copy with the executable bit set. Convention: bin/ contains only shell
+  # scripts (no extension). No symlinks needed — scripts have no node_modules
+  # dependency.
+  #
+  # Adding a new wrapper: drop <name> in opencode/bin/, git add, switch.
+  binFiles = builtins.readDir (opencodeDir + "/bin");
+  binEntries = lib.mapAttrs' (name: _:
+    lib.nameValuePair
+      ".local/bin/${name}"
+      { source = opencodeDir + "/bin/${name}";
+        executable = true; }
+  ) (lib.filterAttrs (_: t: t == "regular") binFiles);
+
 in
 {
   # ── Dotfiles ────────────────────────────────────────────────────────────────
@@ -76,7 +91,8 @@ in
   // agentEntries
   // skillEntries
   // commandEntries
-  // toolEntries;
+  // toolEntries
+  // binEntries;
 
   # ── Environment ─────────────────────────────────────────────────────────────
   # AI_CODING_MONOREPO: absolute path used by pipeline commands and the
@@ -86,8 +102,10 @@ in
   };
 
   # OpenCode installs its own CLI tools here.
+  # ~/.local/bin/ holds shell wrapper scripts deployed from opencode/bin/.
   home.sessionPath = [
     "$HOME/.opencode/bin"
+    "$HOME/.local/bin"
   ];
 
   # ── Activation scripts ──────────────────────────────────────────────────────

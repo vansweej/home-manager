@@ -27,6 +27,7 @@ opencode/skills/*/SKILL.md         # OpenCode skills deployed to ~/.config/openc
 opencode/agents/*.md               # OpenCode agents deployed to ~/.config/opencode/agents/
 opencode/commands/*.md             # OpenCode commands deployed to ~/.config/opencode/commands/
 opencode/tools/*.ts                # Marker files — auto-discovered; runtime symlinks to ai-coding repo
+opencode/bin/*                     # Shell wrapper scripts deployed to ~/.local/bin/
 nvim/                              # Neovim plugin files (symlinked via mkOutOfStoreSymlink)
 flake.lock                         # Pinned dependency revisions (do not hand-edit)
 .gitignore                         # Ignores: result, result-*, .direnv
@@ -263,6 +264,7 @@ The `opencode/` directory mirrors the XDG deployment target exactly:
 | `opencode/agents/<name>.md` | `~/.config/opencode/agents/<name>.md` |
 | `opencode/commands/<name>.md` | `~/.config/opencode/commands/<name>.md` |
 | `opencode/tools/<name>.ts` | `~/.config/opencode/tools/<name>.ts` → symlink to ai-coding repo |
+| `opencode/bin/<name>` | `~/.local/bin/<name>` (executable, nix-store copy) |
 
 All four categories are **auto-discovered** by `modules/opencode.nix` using
 `builtins.readDir`. No manual `home.file` entries are needed.
@@ -302,6 +304,21 @@ that `builtins.readDir` uses to register the tool for deployment.
 At runtime, `~/.config/opencode/tools/<name>.ts` is a live symlink to
 `~/Projects/ai-coding/.opencode/tools/<name>.ts`, so bun can resolve
 `node_modules` relative to the file.
+
+---
+
+### Adding a new CLI wrapper
+
+Shell wrapper scripts in `opencode/bin/` are deployed to `~/.local/bin/` as
+nix-store copies with the executable bit set. Auto-discovered by
+`builtins.readDir` — no manual `home.file` entries needed. Convention: files
+in `bin/` have no extension and are plain bash scripts.
+
+1. Create the script in `opencode/bin/<name>` (no file extension)
+2. `git add opencode/bin/<name>` and `home-manager switch`
+
+Scripts use `$AI_CODING_MONOREPO` (set globally by Home Manager) to locate the
+monorepo and delegate to `bun run --cwd "$monorepo" <script-name>`.
 
 ---
 

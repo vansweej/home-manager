@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Search the codebase index for semantically similar code chunks.
+#
+# Usage:
+#   codebase-retrieval "<query>"                        # search current repo
+#   codebase-retrieval "<query>" --workspace <path>     # search a specific repo
+#   codebase-retrieval "<query>" --no-refresh           # skip incremental re-index
+#   codebase-retrieval "<query>" --limit <n>            # limit results
+#
+# When --workspace is not provided, $PWD is injected automatically so results
+# are scoped to the repository you are currently working in.
+#
+# All flags are forwarded verbatim to:
+#   bun run codebase-retrieval <query> [flags]
+#
+# Requires AI_CODING_MONOREPO to be set (done globally by Home Manager).
+
+set -euo pipefail
+
+monorepo="${AI_CODING_MONOREPO:?AI_CODING_MONOREPO is not set — run: home-manager switch}"
+
+# If --workspace is already provided, forward everything as-is
+for arg in "$@"; do
+  if [[ "$arg" == "--workspace" ]]; then
+    exec bun run --cwd "$monorepo" codebase-retrieval "$@"
+  fi
+done
+
+# Otherwise inject --workspace $PWD so results are scoped to the current repo
+exec bun run --cwd "$monorepo" codebase-retrieval "$@" --workspace "$PWD"
