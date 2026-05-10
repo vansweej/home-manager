@@ -2,9 +2,14 @@
 # generate-tarball.sh — produce a self-contained opencode-setup-<DATE>.tar.gz
 #
 # The tarball extracts into ~/.config/opencode/ and includes all agents, skills,
-# commands, the pipeline tool with bundled node_modules, and a generated
-# README-install.md. It is fully self-contained: no Nix, no home-manager, and no
-# post-install steps beyond optionally configuring shell environment variables.
+# commands, all tools with bundled node_modules, and a generated README-install.md.
+# It is fully self-contained: no Nix, no home-manager, and no post-install steps
+# beyond optionally configuring shell environment variables.
+#
+# Agents, skills, commands, and tools are auto-discovered from the opencode/
+# directory structure — no manual updates needed when files are added or removed.
+# Tool implementations are always copied from the ai-coding repo (authoritative
+# source); opencode/tools/*.ts are marker files only.
 #
 # Usage:
 #   ./generate-tarball.sh          # produce opencode-setup-YYYY-MM-DD.tar.gz
@@ -84,19 +89,52 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# Auto-discover source files
+# ---------------------------------------------------------------------------
+
+# Agents: all *.md files under opencode/agents/
+mapfile -t AGENTS < <(find "$OPENCODE_SRC/agents" -maxdepth 1 -name '*.md' -type f | sort)
+
+# Skills: all subdirectories under opencode/skill/ that contain a SKILL.md
+mapfile -t SKILLS < <(find "$OPENCODE_SRC/skill" -maxdepth 2 -name 'SKILL.md' -type f | sort)
+
+# Commands: all *.md files under opencode/commands/
+mapfile -t COMMANDS < <(find "$OPENCODE_SRC/commands" -maxdepth 1 -name '*.md' -type f | sort)
+
+# Tools: all *.ts marker files under opencode/tools/ — real source is in ai-coding
+mapfile -t TOOL_MARKERS < <(find "$OPENCODE_SRC/tools" -maxdepth 1 -name '*.ts' -type f | sort)
+
+info "Discovered: ${#AGENTS[@]} agent(s), ${#SKILLS[@]} skill(s), ${#COMMANDS[@]} command(s), ${#TOOL_MARKERS[@]} tool(s)"
+
+# ---------------------------------------------------------------------------
 # Validate expected source files
 # ---------------------------------------------------------------------------
 
 MISSING=()
 
-[ -f "$OPENCODE_SRC/AGENTS.md" ]                                  || MISSING+=("opencode/AGENTS.md")
-[ -f "$OPENCODE_SRC/package.json" ]                               || MISSING+=("opencode/package.json")
-[ -f "$AI_CODING_DIR/.opencode/tools/pipeline.ts" ]               || MISSING+=("ai-coding/.opencode/tools/pipeline.ts")
-[ -f "$AI_CODING_DIR/opencode/mappings/opencode.json" ]           || MISSING+=("ai-coding/opencode/mappings/opencode.json")
+[ -f "$OPENCODE_SRC/AGENTS.md" ]   || MISSING+=("opencode/AGENTS.md")
+[ -f "$OPENCODE_SRC/package.json" ] || MISSING+=("opencode/package.json")
 
-for skill in analyst architect cpp debugger documenter explorer programmer reviewer rust tester; do
-  [ -f "$OPENCODE_SRC/skill/$skill/SKILL.md" ] || MISSING+=("opencode/skill/$skill/SKILL.md")
+for agent in "${AGENTS[@]}"; do
+  [ -f "$agent" ] || MISSING+=("agents/$(basename "$agent")")
 done
+
+for skill in "${SKILLS[@]}"; do
+  [ -f "$skill" ] || MISSING+=("skill/$(basename "$(dirname "$skill")")/SKILL.md")
+done
+
+for cmd in "${COMMANDS[@]}"; do
+  [ -f "$cmd" ] || MISSING+=("commands/$(basename "$cmd")")
+done
+
+for marker in "${TOOL_MARKERS[@]}"; do
+  name="$(basename "$marker")"
+  [ -f "$AI_CODING_DIR/.opencode/tools/$name" ] \
+    || MISSING+=("ai-coding/.opencode/tools/$name")
+done
+
+[ -f "$AI_CODING_DIR/opencode/mappings/opencode.json" ] \
+  || MISSING+=("ai-coding/opencode/mappings/opencode.json")
 
 if [ ${#MISSING[@]} -gt 0 ]; then
   error "The following required source files are missing:
@@ -117,17 +155,13 @@ TARGET="$STAGING/.config/opencode"
 mkdir -p \
   "$TARGET/agents" \
   "$TARGET/commands" \
-  "$TARGET/tools" \
-  "$TARGET/skill/analyst" \
-  "$TARGET/skill/architect" \
-  "$TARGET/skill/cpp" \
-  "$TARGET/skill/debugger" \
-  "$TARGET/skill/documenter" \
-  "$TARGET/skill/explorer" \
-  "$TARGET/skill/programmer" \
-  "$TARGET/skill/reviewer" \
-  "$TARGET/skill/rust" \
-  "$TARGET/skill/tester"
+  "$TARGET/tools"
+
+# Create skill subdirectories dynamically
+for skill in "${SKILLS[@]}"; do
+  skill_name="$(basename "$(dirname "$skill")")"
+  mkdir -p "$TARGET/skill/$skill_name"
+done
 
 info "Staging directory created at $STAGING"
 
@@ -135,25 +169,39 @@ info "Staging directory created at $STAGING"
 # Copy files from home-manager/opencode/
 # ---------------------------------------------------------------------------
 
-info "Copying agents, skills, commands..."
+info "Copying AGENTS.md, package.json..."
+cp "$OPENCODE_SRC/AGENTS.md"    "$TARGET/"
+cp "$OPENCODE_SRC/package.json" "$TARGET/"
 
-cp "$OPENCODE_SRC/AGENTS.md"       "$TARGET/"
-cp "$OPENCODE_SRC/package.json"    "$TARGET/"
-cp "$OPENCODE_SRC/agents/"*.md     "$TARGET/agents/"
-cp "$OPENCODE_SRC/commands/"*.md   "$TARGET/commands/"
+info "Copying ${#AGENTS[@]} agent(s)..."
+for agent in "${AGENTS[@]}"; do
+  cp "$agent" "$TARGET/agents/"
+done
 
-for skill in analyst architect cpp debugger documenter explorer programmer reviewer rust tester; do
-  cp "$OPENCODE_SRC/skill/$skill/SKILL.md" "$TARGET/skill/$skill/"
+info "Copying ${#SKILLS[@]} skill(s)..."
+for skill in "${SKILLS[@]}"; do
+  skill_name="$(basename "$(dirname "$skill")")"
+  cp "$skill" "$TARGET/skill/$skill_name/"
+done
+
+info "Copying ${#COMMANDS[@]} command(s)..."
+for cmd in "${COMMANDS[@]}"; do
+  cp "$cmd" "$TARGET/commands/"
 done
 
 # ---------------------------------------------------------------------------
-# Copy files from ai-coding/
+# Copy tool implementations from ai-coding/
+# (marker files in opencode/tools/ identify which tools; ai-coding is authoritative)
 # ---------------------------------------------------------------------------
 
-info "Copying pipeline tool and opencode.json from ai-coding..."
+info "Copying ${#TOOL_MARKERS[@]} tool(s) from ai-coding..."
+for marker in "${TOOL_MARKERS[@]}"; do
+  name="$(basename "$marker")"
+  cp "$AI_CODING_DIR/.opencode/tools/$name" "$TARGET/tools/"
+done
 
-cp "$AI_CODING_DIR/.opencode/tools/pipeline.ts"       "$TARGET/tools/"
-cp "$AI_CODING_DIR/opencode/mappings/opencode.json"   "$TARGET/"
+info "Copying opencode.json from ai-coding..."
+cp "$AI_CODING_DIR/opencode/mappings/opencode.json" "$TARGET/"
 
 # ---------------------------------------------------------------------------
 # Install node_modules
@@ -162,6 +210,35 @@ cp "$AI_CODING_DIR/opencode/mappings/opencode.json"   "$TARGET/"
 info "Running bun install to bundle node_modules..."
 bun install --cwd "$TARGET" --frozen-lockfile 2>/dev/null \
   || bun install --cwd "$TARGET"
+
+# ---------------------------------------------------------------------------
+# Collect names for README
+# ---------------------------------------------------------------------------
+
+AGENT_NAMES=()
+for agent in "${AGENTS[@]}"; do
+  AGENT_NAMES+=("$(basename "$agent" .md)")
+done
+
+SKILL_NAMES=()
+for skill in "${SKILLS[@]}"; do
+  SKILL_NAMES+=("$(basename "$(dirname "$skill")")")
+done
+
+COMMAND_NAMES=()
+for cmd in "${COMMANDS[@]}"; do
+  COMMAND_NAMES+=("$(basename "$cmd" .md)")
+done
+
+TOOL_NAMES=()
+for marker in "${TOOL_MARKERS[@]}"; do
+  TOOL_NAMES+=("$(basename "$marker" .ts)")
+done
+
+join_comma() {
+  local IFS=", "
+  echo "$*"
+}
 
 # ---------------------------------------------------------------------------
 # Generate README-install.md
@@ -177,18 +254,16 @@ Platform:  ${PLATFORM}
 Bun:       ${BUN_VERSION}
 
 This archive contains a complete global OpenCode CLI configuration: agents,
-skills, slash commands, a custom pipeline tool, and global config.
+skills, slash commands, custom tools, and global config.
 
 ---
 
 ## Contents
 
-- **11 agents** — 7 primary (plan, build, local, explore, spar, teach, brainstorm)
-  and 4 subagents (planner, debugger, reviewer, tester)
-- **10 skills** — analyst, architect, cpp, debugger, documenter, explorer,
-  programmer, reviewer, rust, tester
-- **3 commands** — pipeline, scaffold-rust, scaffold-cpp
-- **1 custom tool** — pipeline.ts with bundled node_modules
+- **${#AGENT_NAMES[@]} agents** — $(join_comma "${AGENT_NAMES[@]}")
+- **${#SKILL_NAMES[@]} skills** — $(join_comma "${SKILL_NAMES[@]}")
+- **${#COMMAND_NAMES[@]} commands** — $(join_comma "${COMMAND_NAMES[@]}")
+- **${#TOOL_NAMES[@]} custom tool(s)** — $(join_comma "${TOOL_NAMES[@]}") (with bundled node_modules)
 - **Global config** — opencode.json (GitHub Copilot / claude-sonnet-4.6), AGENTS.md
 
 ---
