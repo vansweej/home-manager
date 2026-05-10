@@ -35,22 +35,21 @@ let
   ) (lib.filterAttrs (n: t: t == "regular" && lib.hasSuffix ".md" n) commandFiles);
 
   # ── Auto-discover tools ─────────────────────────────────────────────────────
-  # Every .ts file in opencode/tools/ is deployed as a live symlink into the
-  # ai-coding repo. Tools use mkOutOfStoreSymlink so bun can resolve
-  # node_modules relative to the file at runtime.
+  # Every .ts file in opencode/tools/ is deployed as a live symlink pointing
+  # back into this home-manager repo. Tools use mkOutOfStoreSymlink so bun can
+  # resolve node_modules from ~/.config/opencode/ at runtime.
   #
-  # The files in opencode/tools/ are MARKER FILES only — they exist so
-  # builtins.readDir can register them. The ai-coding repo is the authoritative
-  # source. Do not add real source code to the home-manager copies.
+  # The source of truth for tool code is opencode/tools/ in this repo.
+  # bun install runs in ~/.config/opencode/ (see installAiCodingDeps below)
+  # to provide the @opencode-ai/plugin dependency.
   #
-  # Adding a new tool: drop a marker <name>.ts in opencode/tools/, git add,
-  # switch. The real implementation lives in ai-coding/.opencode/tools/<name>.ts.
+  # Adding a new tool: drop <name>.ts in opencode/tools/, git add, switch.
   toolFiles = builtins.readDir (opencodeDir + "/tools");
   toolEntries = lib.mapAttrs' (name: _:
     lib.nameValuePair
       ".config/opencode/tools/${name}"
       { source = config.lib.file.mkOutOfStoreSymlink
-          "${aiCodingRepo}/.opencode/tools/${name}"; }
+          "${config.home.homeDirectory}/Projects/home-manager/opencode/tools/${name}"; }
   ) (lib.filterAttrs (n: t: t == "regular" && lib.hasSuffix ".ts" n) toolFiles);
 
 in
@@ -65,6 +64,14 @@ in
     ".config/opencode/opencode.json".source =
       config.lib.file.mkOutOfStoreSymlink
         "${aiCodingRepo}/opencode/mappings/opencode.json";
+
+    # Tool dependencies — nix-store copy. Provides @opencode-ai/plugin to the
+    # tools symlinked into ~/.config/opencode/tools/. bun install runs against
+    # this directory in the installAiCodingDeps activation step.
+    # NOTE: if ~/.config/opencode/package.json already exists as a plain file,
+    # remove it before running home-manager switch:
+    #   rm ~/.config/opencode/package.json
+    ".config/opencode/package.json".source = opencodeDir + "/package.json";
   }
   // agentEntries
   // skillEntries
@@ -98,7 +105,7 @@ in
   '';
 
   # Install dependencies for both the monorepo root (@ai-coding/skills and
-  # other workspace packages) and .opencode/ (@opencode-ai/plugin).
+  # other workspace packages) and ~/.config/opencode/ (@opencode-ai/plugin).
   #
   # Uses a bun.lock SHA-256 stamp to skip redundant installs — bun install
   # only runs when the lockfile has changed since the last successful install.
@@ -114,10 +121,13 @@ in
     lib.hm.dag.entryBetween [ "writeBoundary" ] [ "cloneAiCoding" ] ''
       _oc_install() {
         local dir="$1"
-        # Skip if no lockfile — guard against missing .opencode/bun.lock
-        if [ ! -f "$dir/bun.lock" ]; then return 0; fi
+        # Use bun.lock for change detection when available; fall back to
+        # package.json so a fresh machine with no lockfile still installs.
+        local lockFile="$dir/bun.lock"
+        if [ ! -f "$lockFile" ]; then lockFile="$dir/package.json"; fi
+        if [ ! -f "$lockFile" ]; then return 0; fi
         local lockHash
-        lockHash=$(${pkgs.coreutils}/bin/sha256sum "$dir/bun.lock" | cut -d' ' -f1)
+        lockHash=$(${pkgs.coreutils}/bin/sha256sum "$lockFile" | cut -d' ' -f1)
         local stamp="$dir/node_modules/.hm-install-stamp"
         # Skip if stamp matches current lockfile hash
         if [ -f "$stamp" ] && [ "$(cat "$stamp")" = "$lockHash" ]; then
@@ -129,6 +139,6 @@ in
         fi
       }
       _oc_install "$HOME/Projects/ai-coding"
-      _oc_install "$HOME/Projects/ai-coding/.opencode"
+      _oc_install "$HOME/.config/opencode"
     '';
 }
