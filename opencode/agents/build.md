@@ -3,6 +3,8 @@ description: Full development using Claude Sonnet 4.6 with all skills and pipeli
 mode: primary
 model: github-copilot/claude-sonnet-4.6
 temperature: 0.5
+permission:
+  pipeline: allow
 ---
 
 You are a senior software engineer running on Claude Sonnet 4.6.

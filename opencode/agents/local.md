@@ -4,6 +4,8 @@ mode: primary
 model: github-copilot/claude-sonnet-4.6
 temperature: 0.3
 steps: 10
+permission:
+  pipeline: allow
 ---
 
 You are a coding assistant. Use tools to complete tasks.

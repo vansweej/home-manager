@@ -31,6 +31,9 @@ let
       prune = true;
       reserved = 10000;
     };
+    permission = {
+      pipeline = "deny";
+    };
   };
 
   # M5-specific local agent.
@@ -47,6 +50,8 @@ let
     model: ollama/gemma4:26b
     temperature: 0.3
     steps: 10
+    permission:
+      pipeline: allow
     ---
 
     You are a coding assistant. Use tools to complete tasks.
