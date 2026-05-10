@@ -1,7 +1,5 @@
 { pkgs, lib, config, ... }:
 let
-  aiCodingRepo = "${config.home.homeDirectory}/Projects/ai-coding";
-
   # M5-specific local agent.
   # Mirrors opencode/agents/local.md exactly, with model and description
   # overridden for Ollama. The markdown frontmatter model field is authoritative
@@ -32,13 +30,6 @@ let
 in
 {
   # M5 MacBook-specific configuration.
-
-  # Override the shared opencode.json symlink (deployed by opencode.nix) with an
-  # M5-specific live symlink that includes the local Ollama provider. Edits in
-  # the ai-coding repo are reflected immediately without re-running home-manager switch.
-  home.file.".config/opencode/opencode.json".source = lib.mkForce
-    (config.lib.file.mkOutOfStoreSymlink
-      "${aiCodingRepo}/opencode/mappings/opencode-m5.json");
 
   # Override the shared local.md agent (deployed by opencode.nix auto-discovery)
   # with an M5-specific version whose frontmatter sets model: ollama/gemma4:26b.
