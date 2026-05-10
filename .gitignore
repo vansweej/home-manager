@@ -7,3 +7,7 @@ result-*
 
 # Ignore generated OpenCode setup tarballs
 opencode-setup-*.tar.gz
+
+# Ignore bun/npm install output for opencode tools
+opencode/node_modules
+opencode/bun.lock

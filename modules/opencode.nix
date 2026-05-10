@@ -140,5 +140,6 @@ in
       }
       _oc_install "$HOME/Projects/ai-coding"
       _oc_install "$HOME/.config/opencode"
+      _oc_install "$HOME/Projects/home-manager/opencode"
     '';
 }
