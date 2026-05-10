@@ -1,10 +1,10 @@
 { pkgs, lib, config, ... }:
 let
   # M5-specific OpenCode configuration.
-  # Registers the local Ollama provider and sets gemma4:26b as the default
-  # model. Overrides the shared opencode.json symlink from opencode.nix.
-  # Fallback to cloud models: Tab to the built-in build/plan agents which
-  # use github-copilot/claude-sonnet-4.6.
+  # Registers the local Ollama provider but defaults to github-copilot/claude-sonnet-4.6.
+  # Overrides the shared opencode.json symlink from opencode.nix.
+  # Switch to ollama/gemma4:26b manually, or use the local agent which
+  # targets Ollama directly via its frontmatter model field.
   m5OpencodeConfig = builtins.toJSON {
     "$schema" = "https://opencode.ai/config.json";
     provider = {
@@ -25,7 +25,7 @@ let
         };
       };
     };
-    model = "ollama/gemma4:26b";
+    model = "github-copilot/claude-sonnet-4.6";
   };
 
   # M5-specific local agent.
@@ -60,8 +60,8 @@ in
   # M5 MacBook-specific configuration.
 
   # Override the shared opencode.json symlink (deployed by opencode.nix) with a
-  # static file that registers the Ollama provider and sets gemma4:26b as the
-  # default model. Other machines keep the shared symlink pointing to ai-coding.
+  # static file that registers the Ollama provider and defaults to GitHub Copilot.
+  # Other machines keep the shared symlink pointing to ai-coding.
   home.file.".config/opencode/opencode.json".source = lib.mkForce
     (pkgs.writeText "m5-opencode.json" m5OpencodeConfig);
 
