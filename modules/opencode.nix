@@ -15,13 +15,13 @@ let
   ) (lib.filterAttrs (n: t: t == "regular" && lib.hasSuffix ".md" n) agentFiles);
 
   # ── Auto-discover skills ────────────────────────────────────────────────────
-  # Every subdirectory of opencode/skill/ is expected to contain a SKILL.md.
-  # Adding a new skill: create opencode/skill/<name>/SKILL.md, git add, switch.
-  skillDirs = builtins.readDir (opencodeDir + "/skill");
+  # Every subdirectory of opencode/skills/ is expected to contain a SKILL.md.
+  # Adding a new skill: create opencode/skills/<name>/SKILL.md, git add, switch.
+  skillDirs = builtins.readDir (opencodeDir + "/skills");
   skillEntries = lib.mapAttrs' (name: _:
     lib.nameValuePair
-      ".config/opencode/skill/${name}/SKILL.md"
-      { source = opencodeDir + "/skill/${name}/SKILL.md"; }
+      ".config/opencode/skills/${name}/SKILL.md"
+      { source = opencodeDir + "/skills/${name}/SKILL.md"; }
   ) (lib.filterAttrs (_: t: t == "directory") skillDirs);
 
   # ── Auto-discover commands ──────────────────────────────────────────────────

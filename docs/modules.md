@@ -58,7 +58,7 @@ and run `home-manager switch`.
 | Category | Source directory | Filter | Deployment method |
 |---|---|---|---|
 | Agents | `opencode/agents/` | `*.md` files | Nix store copy |
-| Skills | `opencode/skill/` | Subdirectories (each must contain `SKILL.md`) | Nix store copy |
+| Skills | `opencode/skills/` | Subdirectories (each must contain `SKILL.md`) | Nix store copy |
 | Commands | `opencode/commands/` | `*.md` files | Nix store copy |
 | Tools | `opencode/tools/` | `*.ts` files | `mkOutOfStoreSymlink` → ai-coding repo |
 
@@ -73,7 +73,7 @@ ai-coding repo, so bun can resolve `node_modules` relative to the file.
 | Destination | Source | Method |
 |---|---|---|
 | `~/.config/opencode/AGENTS.md` | `opencode/AGENTS.md` | Store copy |
-| `~/.config/opencode/skill/*/SKILL.md` | `opencode/skill/*/SKILL.md` | Store copy (auto-discovered) |
+| `~/.config/opencode/skills/*/SKILL.md` | `opencode/skills/*/SKILL.md` | Store copy (auto-discovered) |
 | `~/.config/opencode/agents/*.md` | `opencode/agents/*.md` | Store copy (auto-discovered) |
 | `~/.config/opencode/commands/*.md` | `opencode/commands/*.md` | Store copy (auto-discovered) |
 | `~/.config/opencode/tools/pipeline.ts` | `~/Projects/ai-coding/.opencode/tools/pipeline.ts` | Live symlink (auto-discovered) |

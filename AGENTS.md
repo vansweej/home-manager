@@ -23,7 +23,7 @@ modules/
     m1.nix                         # M1-only: placeholder for M1-specific config
     m5.nix                         # M5-only: placeholder for M5-specific config
 opencode/AGENTS.md                 # Machine-wide OpenCode agent instructions
-opencode/skill/*/SKILL.md          # OpenCode skills deployed to ~/.config/opencode/skill/
+opencode/skills/*/SKILL.md         # OpenCode skills deployed to ~/.config/opencode/skills/
 opencode/agents/*.md               # OpenCode agents deployed to ~/.config/opencode/agents/
 opencode/commands/*.md             # OpenCode commands deployed to ~/.config/opencode/commands/
 opencode/tools/*.ts                # Marker files — auto-discovered; runtime symlinks to ai-coding repo
@@ -259,7 +259,7 @@ The `opencode/` directory mirrors the XDG deployment target exactly:
 | Repo path | Deployed to |
 |---|---|
 | `opencode/AGENTS.md` | `~/.config/opencode/AGENTS.md` |
-| `opencode/skill/<name>/SKILL.md` | `~/.config/opencode/skill/<name>/SKILL.md` |
+| `opencode/skills/<name>/SKILL.md` | `~/.config/opencode/skills/<name>/SKILL.md` |
 | `opencode/agents/<name>.md` | `~/.config/opencode/agents/<name>.md` |
 | `opencode/commands/<name>.md` | `~/.config/opencode/commands/<name>.md` |
 | `opencode/tools/<name>.ts` | `~/.config/opencode/tools/<name>.ts` → symlink to ai-coding repo |
@@ -277,9 +277,9 @@ cp my-agent.md opencode/agents/my-agent.md
 git add opencode/agents/my-agent.md
 
 # New skill
-mkdir -p opencode/skill/my-skill
-cp SKILL.md opencode/skill/my-skill/SKILL.md
-git add opencode/skill/my-skill/SKILL.md
+mkdir -p opencode/skills/my-skill
+cp SKILL.md opencode/skills/my-skill/SKILL.md
+git add opencode/skills/my-skill/SKILL.md
 
 # New command
 cp my-command.md opencode/commands/my-command.md
