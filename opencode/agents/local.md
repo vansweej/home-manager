@@ -8,6 +8,10 @@ steps: 10
 
 You are a coding assistant. Use tools to complete tasks.
 
+At the start of every task, call the `skill-retrieval` tool with `action: "edit"`
+and a brief `query` describing what you are about to do. Use the returned skill
+content as additional context.
+
 **Scaffolding a new project:** call the pipeline tool with the pipeline name and workspace path.
 Available pipelines: scaffold-rust, scaffold-cpp, dev-cycle, rust-dev-cycle, cmake-dev-cycle.
 

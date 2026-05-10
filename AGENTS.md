@@ -12,17 +12,21 @@ flake.nix                          # mkHome helper and homeConfigurations output
 machines/
   oryp6.nix                        # Metadata: system, username, homeDir, flags (x86_64-linux)
   m1.nix                           # Metadata: system, username, homeDir, flags (aarch64-darwin)
+  m5.nix                           # Metadata: system, username, homeDir, flags (aarch64-darwin)
 modules/
-  common.nix                       # Universal: programs, fonts, dotfiles, activation scripts
+  common.nix                       # Universal: programs, fonts, nvim symlinks, bootstrapNvim
+  opencode.nix                     # OpenCode: auto-discovery, activation, session vars
   linux.nix                        # Linux-only: nixGL wrapper, .desktop file
   darwin.nix                       # macOS-only: placeholder for Darwin-specific config
   machines/
     oryp6.nix                      # oryp6-only: rootless Docker, systemd service
     m1.nix                         # M1-only: placeholder for M1-specific config
+    m5.nix                         # M5-only: placeholder for M5-specific config
 opencode/AGENTS.md                 # Machine-wide OpenCode agent instructions
 opencode/skill/*/SKILL.md          # OpenCode skills deployed to ~/.config/opencode/skill/
 opencode/agents/*.md               # OpenCode agents deployed to ~/.config/opencode/agents/
 opencode/commands/*.md             # OpenCode commands deployed to ~/.config/opencode/commands/
+opencode/tools/*.ts                # Marker files — auto-discovered; runtime symlinks to ai-coding repo
 nvim/                              # Neovim plugin files (symlinked via mkOutOfStoreSymlink)
 flake.lock                         # Pinned dependency revisions (do not hand-edit)
 .gitignore                         # Ignores: result, result-*, .direnv
@@ -38,7 +42,7 @@ home-manager configuration flake.
 Each machine profile is composed from three layers:
 
 ```
-common.nix          (all machines)
+common.nix          (all machines) — imports opencode.nix
     +
 linux.nix           (x86_64-linux machines only)
   OR
@@ -46,6 +50,11 @@ darwin.nix          (aarch64-darwin machines only)
     +
 modules/machines/<name>.nix   (that machine only)
 ```
+
+`opencode.nix` is imported by `common.nix` and manages all OpenCode configuration:
+agents, skills, commands, tools, session variables, and activation scripts.
+It uses `builtins.readDir` to auto-discover files from the `opencode/` directory —
+no manual `home.file` entries are needed when adding new agents, skills, or tools.
 
 Machine identity (`home.username`, `home.homeDirectory`, `home.stateVersion`) is
 injected by the `mkHome` helper in `flake.nix` from the machine metadata file —
@@ -253,9 +262,46 @@ The `opencode/` directory mirrors the XDG deployment target exactly:
 | `opencode/skill/<name>/SKILL.md` | `~/.config/opencode/skill/<name>/SKILL.md` |
 | `opencode/agents/<name>.md` | `~/.config/opencode/agents/<name>.md` |
 | `opencode/commands/<name>.md` | `~/.config/opencode/commands/<name>.md` |
+| `opencode/tools/<name>.ts` | `~/.config/opencode/tools/<name>.ts` → symlink to ai-coding repo |
 
-When adding a new skill, add both the file under `opencode/skill/<name>/SKILL.md`
-and a corresponding `home.file` entry in `modules/common.nix`.
+All four categories are **auto-discovered** by `modules/opencode.nix` using
+`builtins.readDir`. No manual `home.file` entries are needed.
+
+### Adding a new agent, skill, or command
+
+Drop the file in the correct directory, `git add` it, and run `home-manager switch`.
+
+```bash
+# New agent
+cp my-agent.md opencode/agents/my-agent.md
+git add opencode/agents/my-agent.md
+
+# New skill
+mkdir -p opencode/skill/my-skill
+cp SKILL.md opencode/skill/my-skill/SKILL.md
+git add opencode/skill/my-skill/SKILL.md
+
+# New command
+cp my-command.md opencode/commands/my-command.md
+git add opencode/commands/my-command.md
+```
+
+### Adding a new OpenCode tool
+
+Tools are TypeScript files executed by bun at runtime. The ai-coding repo is
+the authoritative source; the home-manager repo holds only a **marker file**
+that `builtins.readDir` uses to register the tool for deployment.
+
+1. Implement the tool in `~/Projects/ai-coding/.opencode/tools/<name>.ts`
+2. Add a marker file in `opencode/tools/<name>.ts`:
+   ```ts
+   // Marker file — runtime resolves via mkOutOfStoreSymlink to ai-coding repo.
+   ```
+3. `git add opencode/tools/<name>.ts` and `home-manager switch`
+
+At runtime, `~/.config/opencode/tools/<name>.ts` is a live symlink to
+`~/Projects/ai-coding/.opencode/tools/<name>.ts`, so bun can resolve
+`node_modules` relative to the file.
 
 ---
 

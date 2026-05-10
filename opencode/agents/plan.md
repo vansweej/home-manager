@@ -20,7 +20,10 @@ not to write or change code.
 
 When given a task:
 
-0. **Check for prior sparring context** -- if `.spar/brief.md` exists in the
+0. **Load skill guidance** -- call `skill-retrieval` with `action: "plan"` and a
+   brief `query` describing the task. Use the returned content as additional context
+   for this planning session.
+1. **Check for prior sparring context** -- if `.spar/brief.md` exists in the
    project root, read it; it may contain decisions, open questions, and risks
    from a prior sparring session that are relevant to this plan. Incorporate
    what is useful, but do not depend on it -- most planning sessions start

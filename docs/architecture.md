@@ -11,14 +11,21 @@ flake.nix                          # mkHome helper; all homeConfigurations outpu
 machines/
   oryp6.nix                        # Plain attrset: system, username, homeDir, flags
   m1.nix                           # Plain attrset: system, username, homeDir, flags
+  m5.nix                           # Plain attrset: system, username, homeDir, flags
 modules/
-  common.nix                       # Universal config — all machines
+  common.nix                       # Universal config — all machines; imports opencode.nix
+  opencode.nix                     # OpenCode config — auto-discovery, activation, session vars
   linux.nix                        # Linux-only config
   darwin.nix                       # macOS-only config
   machines/
     oryp6.nix                      # oryp6-specific config
     m1.nix                         # M1-specific config
+    m5.nix                         # M5-specific config
 opencode/                          # OpenCode files deployed to ~/.config/opencode/
+  agents/                          # Agent .md files (auto-discovered)
+  skill/                           # Skill subdirectories, each with SKILL.md (auto-discovered)
+  commands/                        # Command .md files (auto-discovered)
+  tools/                           # Tool marker .ts files (auto-discovered; runtime → ai-coding repo)
 nvim/                              # Neovim plugin files (live-symlinked)
 ```
 
@@ -27,7 +34,7 @@ nvim/                              # Neovim plugin files (live-symlinked)
 Each machine profile is composed from exactly three layers:
 
 ```
-modules/common.nix          ← all machines
+modules/common.nix          ← all machines (imports opencode.nix)
       +
 modules/linux.nix           ← x86_64-linux machines only
   OR
@@ -36,8 +43,10 @@ modules/darwin.nix          ← aarch64-darwin machines only
 modules/machines/<name>.nix ← that machine only
 ```
 
-Home-manager merges all three layers at evaluation time. Each layer only contains
-what belongs to it — no platform conditionals inside shared files.
+`opencode.nix` is imported by `common.nix` and handles all OpenCode-specific
+configuration: auto-discovered agents, skills, commands, and tools; session
+variables; session path; and the `cloneAiCoding` + `installAiCodingDeps`
+activation scripts.
 
 ## Machine metadata files
 
@@ -105,17 +114,23 @@ Key properties:
 
 ## Activation script ordering
 
-Two activation scripts run on every `home-manager switch`:
+Three activation scripts run on every `home-manager switch`:
 
-| Script | Order | Purpose |
-|---|---|---|
-| `cloneAiCoding` | `entryBefore [ "writeBoundary" ]` | Clones `~/Projects/ai-coding` if absent |
-| `bootstrapNvim` | `entryBefore [ "writeBoundary" ]` | Bootstraps `~/.config/nvim` from LazyVim starter |
+| Script | Module | Order | Purpose |
+|---|---|---|---|
+| `cloneAiCoding` | `opencode.nix` | `entryBefore [ "writeBoundary" ]` | Clones `~/Projects/ai-coding` if absent |
+| `installAiCodingDeps` | `opencode.nix` | After `cloneAiCoding`, before `writeBoundary` | Installs monorepo root + `.opencode/` deps with lockfile-hash stamp |
+| `bootstrapNvim` | `common.nix` | `entryBefore [ "writeBoundary" ]` | Bootstraps `~/.config/nvim` from LazyVim starter |
 
-Both run **before** `writeBoundary` — the phase where home-manager creates
-`mkOutOfStoreSymlink` symlinks. This ensures that symlinks pointing into
+All three run **before** `writeBoundary` — the phase where home-manager creates
+`mkOutOfStoreSymlink` symlinks. This ensures symlinks pointing into
 `~/Projects/ai-coding/` and `~/Projects/home-manager/` are never dangling on a
 fresh machine's first activation.
+
+`installAiCodingDeps` uses a SHA-256 hash of `bun.lock` stored in
+`node_modules/.hm-install-stamp` to skip redundant installs. The stamp is written
+only on success — a failed install is retried on the next switch without blocking
+the rest of the activation.
 
 ## `mkOutOfStoreSymlink` vs store paths
 
@@ -124,11 +139,17 @@ Two kinds of file management are used:
 | Method | When used | Behaviour |
 |---|---|---|
 | Store path (`.source = ./path`) | Static files: skills, agents, commands | Copied into Nix store; requires `home-manager switch` to update |
-| `mkOutOfStoreSymlink` | Live files: nvim plugins, `opencode.json`, pipeline tool | Symlinked to the repo/ai-coding path; updates immediately on disk |
+| `mkOutOfStoreSymlink` | Live files: nvim plugins, `opencode.json`, OpenCode tools | Symlinked to the repo/ai-coding path; updates immediately on disk |
 
-The pipeline tool (`pipeline.ts`) uses `mkOutOfStoreSymlink` pointing into
-`~/Projects/ai-coding/` because `bun` needs to resolve `node_modules` relative to
-the file — copying it into the Nix store would break that resolution.
+OpenCode tools (`pipeline.ts`, `skill-retrieval.ts`) use `mkOutOfStoreSymlink`
+pointing into `~/Projects/ai-coding/.opencode/tools/` because bun needs to
+resolve `node_modules` relative to the file — copying into the Nix store would
+break that resolution.
+
+The files in `opencode/tools/` of this repo are **marker files** only: they exist
+so `builtins.readDir` in `opencode.nix` can register each tool for deployment.
+The ai-coding repo holds the real source. See `docs/modules.md` for the full
+convention.
 
 ## Adding a new machine
 
