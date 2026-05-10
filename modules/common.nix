@@ -1,6 +1,9 @@
 { pkgs, lib, config, inputs, ... }:
 {
-  imports = [ ./opencode.nix ];
+  imports = [
+    ./opencode.nix
+    ./grammars.nix
+  ];
 
   fonts.fontconfig.enable = true;
 
