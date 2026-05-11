@@ -5,7 +5,8 @@
 #   index-codebase                        # index current directory
 #   index-codebase <repo-path>            # index a specific repo
 #   index-codebase [--force] [--ttl <n>]  # flags forwarded to the CLI
-#   index-codebase --purge-only           # purge only, no repo path needed
+#   index-codebase --purge-only           # TTL + dead-repo purge (no Ollama needed)
+#   index-codebase --purge-repo <path>    # remove a specific repo from the index (no Ollama needed)
 #
 # All flags are forwarded verbatim to:
 #   bun run index-codebase <repo-path> [flags]
@@ -16,9 +17,9 @@ set -euo pipefail
 
 monorepo="${AI_CODING_MONOREPO:?AI_CODING_MONOREPO is not set — run: home-manager switch}"
 
-# --purge-only needs no repo path — forward everything as-is
+# --purge-only and --purge-repo need no default repo path — forward everything as-is
 for arg in "$@"; do
-  if [[ "$arg" == "--purge-only" ]]; then
+  if [[ "$arg" == "--purge-only" ]] || [[ "$arg" == "--purge-repo" ]]; then
     exec bun run --cwd "$monorepo" index-codebase "$@"
   fi
 done
