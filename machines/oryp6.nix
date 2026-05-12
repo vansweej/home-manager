@@ -4,4 +4,5 @@
   homeDirectory = "/home/vansweej";
   stateVersion = "25.11";
   cudaSupport = true;
+  nixGL = true;
 }
