@@ -23,9 +23,10 @@ modules/
     m5.nix                         # M5-specific config
 opencode/                          # OpenCode files deployed to ~/.config/opencode/
   agents/                          # Agent .md files (auto-discovered)
-  skill/                           # Skill subdirectories, each with SKILL.md (auto-discovered)
+  skills/                          # Skill subdirectories, each with SKILL.md (auto-discovered)
   commands/                        # Command .md files (auto-discovered)
-  tools/                           # Tool marker .ts files (auto-discovered; runtime → ai-coding repo)
+  tools/                           # Tool implementations (auto-discovered; shell out to ai-coding at runtime)
+  bin/                             # CLI wrapper scripts (auto-discovered; deployed to ~/.local/bin/)
 nvim/                              # Neovim plugin files (live-symlinked)
 ```
 
@@ -138,18 +139,15 @@ Two kinds of file management are used:
 
 | Method | When used | Behaviour |
 |---|---|---|
-| Store path (`.source = ./path`) | Static files: skills, agents, commands | Copied into Nix store; requires `home-manager switch` to update |
+| Store path (`.source = ./path`) | Static files: skills, agents, commands, bin wrappers | Copied into Nix store; requires `home-manager switch` to update |
 | `mkOutOfStoreSymlink` | Live files: nvim plugins, `opencode.json`, OpenCode tools | Symlinked to the repo/ai-coding path; updates immediately on disk |
 
-OpenCode tools (`pipeline.ts`, `skill-retrieval.ts`) use `mkOutOfStoreSymlink`
-pointing into `~/Projects/ai-coding/.opencode/tools/` because bun needs to
-resolve `node_modules` relative to the file — copying into the Nix store would
-break that resolution.
-
-The files in `opencode/tools/` of this repo are **marker files** only: they exist
-so `builtins.readDir` in `opencode.nix` can register each tool for deployment.
-The ai-coding repo holds the real source. See `docs/modules.md` for the full
-convention.
+OpenCode tools (`pipeline.ts`, `skill-retrieval.ts`, `codebase-retrieval.ts`) use
+`mkOutOfStoreSymlink` pointing to `~/Projects/home-manager/opencode/tools/` because
+bun needs to resolve `node_modules` relative to the file — copying into the Nix
+store would break that resolution. The tools are full implementations that delegate
+to the ai-coding monorepo at runtime via subprocess (`bun run <script> --cwd
+$AI_CODING_MONOREPO`). They do not import code from ai-coding.
 
 ## Adding a new machine
 

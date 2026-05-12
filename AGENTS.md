@@ -26,7 +26,7 @@ opencode/AGENTS.md                 # Machine-wide OpenCode agent instructions
 opencode/skills/*/SKILL.md         # OpenCode skills deployed to ~/.config/opencode/skills/
 opencode/agents/*.md               # OpenCode agents deployed to ~/.config/opencode/agents/
 opencode/commands/*.md             # OpenCode commands deployed to ~/.config/opencode/commands/
-opencode/tools/*.ts                # Marker files — auto-discovered; runtime symlinks to ai-coding repo
+opencode/tools/*.ts                # Tool implementations — auto-discovered; shell out to ai-coding monorepo at runtime
 opencode/bin/*                     # Shell wrapper scripts deployed to ~/.local/bin/
 nvim/                              # Neovim plugin files (symlinked via mkOutOfStoreSymlink)
 flake.lock                         # Pinned dependency revisions (do not hand-edit)

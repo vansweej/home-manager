@@ -20,8 +20,9 @@ import { join } from "path";
 
 /** Candidate locations for the bun binary, in priority order. */
 const BUN_CANDIDATES = [
-  join(homedir(), ".nix-profile", "bin", "bun"),
-  "/nix/var/nix/profiles/default/bin/bun",
+  join(homedir(), ".bun", "bin", "bun"),           // default bun installer (WSL/Linux)
+  join(homedir(), ".nix-profile", "bin", "bun"),   // Nix user profile
+  "/nix/var/nix/profiles/default/bin/bun",         // Nix system profile
   "/usr/local/bin/bun",
   "/usr/bin/bun",
   "bun",

@@ -1,15 +1,21 @@
 #!/usr/bin/env bash
 # generate-tarball.sh — produce a self-contained opencode-setup-<DATE>.tar.gz
 #
-# The tarball extracts into ~/.config/opencode/ and includes all agents, skills,
-# commands, all tools with bundled node_modules, and a generated README-install.md.
+# The tarball extracts into ~/ and includes:
+#   ~/.config/opencode/  — agents, skills, commands, tools with bundled
+#                          node_modules, opencode.json, AGENTS.md
+#   ~/.local/bin/        — CLI wrapper scripts (codebase-retrieval, index-codebase)
+#
 # It is fully self-contained: no Nix, no home-manager, and no post-install steps
 # beyond optionally configuring shell environment variables.
 #
-# Agents, skills, commands, and tools are auto-discovered from the opencode/
-# directory structure — no manual updates needed when files are added or removed.
-# Tool implementations live in opencode/tools/ (self-contained; no ai-coding
-# dependency). opencode.json is the one file still sourced from the ai-coding repo.
+# Agents, skills, commands, tools, and bin wrappers are auto-discovered from the
+# opencode/ directory structure — no manual updates needed when files are added
+# or removed.
+#
+# opencode.json is sourced from the ai-coding repo root (../ai-coding/opencode.json).
+# Tool implementations live in opencode/tools/ (self-contained; they delegate to
+# the ai-coding monorepo at runtime via subprocess).
 #
 # Usage:
 #   ./generate-tarball.sh          # produce opencode-setup-YYYY-MM-DD.tar.gz
@@ -93,18 +99,26 @@ fi
 # ---------------------------------------------------------------------------
 
 # Agents: all *.md files under opencode/agents/
-mapfile -t AGENTS < <(find "$OPENCODE_SRC/agents" -maxdepth 1 -name '*.md' -type f | sort)
+AGENTS=()
+while IFS= read -r f; do AGENTS+=("$f"); done < <(find "$OPENCODE_SRC/agents" -maxdepth 1 -name '*.md' -type f | sort)
 
 # Skills: all subdirectories under opencode/skills/ that contain a SKILL.md
-mapfile -t SKILLS < <(find "$OPENCODE_SRC/skills" -maxdepth 2 -name 'SKILL.md' -type f | sort)
+SKILLS=()
+while IFS= read -r f; do SKILLS+=("$f"); done < <(find "$OPENCODE_SRC/skills" -maxdepth 2 -name 'SKILL.md' -type f | sort)
 
 # Commands: all *.md files under opencode/commands/
-mapfile -t COMMANDS < <(find "$OPENCODE_SRC/commands" -maxdepth 1 -name '*.md' -type f | sort)
+COMMANDS=()
+while IFS= read -r f; do COMMANDS+=("$f"); done < <(find "$OPENCODE_SRC/commands" -maxdepth 1 -name '*.md' -type f | sort)
 
-# Tools: all *.ts files under opencode/tools/ — self-contained source, no ai-coding dependency
-mapfile -t TOOLS < <(find "$OPENCODE_SRC/tools" -maxdepth 1 -name '*.ts' -type f | sort)
+# Tools: all *.ts files under opencode/tools/ — self-contained implementations
+TOOLS=()
+while IFS= read -r f; do TOOLS+=("$f"); done < <(find "$OPENCODE_SRC/tools" -maxdepth 1 -name '*.ts' -type f | sort)
 
-info "Discovered: ${#AGENTS[@]} agent(s), ${#SKILLS[@]} skill(s), ${#COMMANDS[@]} command(s), ${#TOOLS[@]} tool(s)"
+# Bin wrappers: all files under opencode/bin/
+BINS=()
+while IFS= read -r f; do BINS+=("$f"); done < <(find "$OPENCODE_SRC/bin" -maxdepth 1 -type f | sort)
+
+info "Discovered: ${#AGENTS[@]} agent(s), ${#SKILLS[@]} skill(s), ${#COMMANDS[@]} command(s), ${#TOOLS[@]} tool(s), ${#BINS[@]} bin wrapper(s)"
 
 # ---------------------------------------------------------------------------
 # Validate expected source files
@@ -132,8 +146,12 @@ for tool in "${TOOLS[@]}"; do
   [ -f "$tool" ] || MISSING+=("tools/$(basename "$tool")")
 done
 
-[ -f "$AI_CODING_DIR/opencode/mappings/opencode.json" ] \
-  || MISSING+=("ai-coding/opencode/mappings/opencode.json")
+for bin in "${BINS[@]}"; do
+  [ -f "$bin" ] || MISSING+=("bin/$(basename "$bin")")
+done
+
+[ -f "$AI_CODING_DIR/opencode.json" ] \
+  || MISSING+=("ai-coding/opencode.json")
 
 if [ ${#MISSING[@]} -gt 0 ]; then
   error "The following required source files are missing:
@@ -150,11 +168,13 @@ STAGING="$(mktemp -d)"
 trap 'rm -rf "$STAGING"' EXIT
 
 TARGET="$STAGING/.config/opencode"
+BIN_TARGET="$STAGING/.local/bin"
 
 mkdir -p \
   "$TARGET/agents" \
   "$TARGET/commands" \
-  "$TARGET/tools"
+  "$TARGET/tools" \
+  "$BIN_TARGET"
 
 # Create skill subdirectories dynamically
 for skill in "${SKILLS[@]}"; do
@@ -191,7 +211,7 @@ done
 
 # ---------------------------------------------------------------------------
 # Copy tool implementations from opencode/tools/
-# (self-contained source — no ai-coding dependency)
+# (self-contained — delegate to ai-coding monorepo at runtime via subprocess)
 # ---------------------------------------------------------------------------
 
 info "Copying ${#TOOLS[@]} tool(s)..."
@@ -200,7 +220,17 @@ for tool in "${TOOLS[@]}"; do
 done
 
 info "Copying opencode.json from ai-coding..."
-cp "$AI_CODING_DIR/opencode/mappings/opencode.json" "$TARGET/"
+cp "$AI_CODING_DIR/opencode.json" "$TARGET/"
+
+# ---------------------------------------------------------------------------
+# Copy bin wrapper scripts from opencode/bin/
+# ---------------------------------------------------------------------------
+
+info "Copying ${#BINS[@]} bin wrapper(s)..."
+for bin in "${BINS[@]}"; do
+  cp "$bin" "$BIN_TARGET/"
+  chmod +x "$BIN_TARGET/$(basename "$bin")"
+done
 
 # ---------------------------------------------------------------------------
 # Install node_modules
@@ -234,6 +264,11 @@ for tool in "${TOOLS[@]}"; do
   TOOL_NAMES+=("$(basename "$tool" .ts)")
 done
 
+BIN_NAMES=()
+for bin in "${BINS[@]}"; do
+  BIN_NAMES+=("$(basename "$bin")")
+done
+
 join_comma() {
   local IFS=", "
   echo "$*"
@@ -253,7 +288,7 @@ Platform:  ${PLATFORM}
 Bun:       ${BUN_VERSION}
 
 This archive contains a complete global OpenCode CLI configuration: agents,
-skills, slash commands, custom tools, and global config.
+skills, slash commands, custom tools, CLI wrappers, and global config.
 
 ---
 
@@ -263,6 +298,7 @@ skills, slash commands, custom tools, and global config.
 - **${#SKILL_NAMES[@]} skills** — $(join_comma "${SKILL_NAMES[@]}")
 - **${#COMMAND_NAMES[@]} commands** — $(join_comma "${COMMAND_NAMES[@]}")
 - **${#TOOL_NAMES[@]} custom tool(s)** — $(join_comma "${TOOL_NAMES[@]}") (with bundled node_modules)
+- **${#BIN_NAMES[@]} CLI wrapper(s)** — $(join_comma "${BIN_NAMES[@]}") (deployed to ~/.local/bin/)
 - **Global config** — opencode.json (GitHub Copilot / claude-sonnet-4.6), AGENTS.md
 
 ---
@@ -276,7 +312,7 @@ Before extracting, ensure the following are installed:
 
 2. **Bun runtime**
    - macOS:  \`brew install bun\`
-   - Linux:  \`curl -fsSL https://bun.sh/install | bash\`
+   - Linux / WSL:  \`curl -fsSL https://bun.sh/install | bash\`
 
 ---
 
@@ -300,18 +336,21 @@ cp -r ~/.config/opencode ~/.config/opencode.bak
 tar xzf opencode-setup-${DATE}.tar.gz -C ~/
 \`\`\`
 
-Everything lands in \`~/.config/opencode/\`.
+Everything lands in \`~/.config/opencode/\` and \`~/.local/bin/\`.
 
 ### 4. Configure your shell profile
 
 Add the following to your \`~/.bashrc\`, \`~/.zshrc\`, or equivalent:
 
 \`\`\`bash
-# Path to the ai-coding monorepo — required for the pipeline tool to work.
+# Path to the ai-coding monorepo — required for all tools to work.
 export AI_CODING_MONOREPO="\$HOME/Projects/ai-coding"
 
 # OpenCode CLI binary path.
 export PATH="\$HOME/.opencode/bin:\$PATH"
+
+# CLI wrappers (codebase-retrieval, index-codebase).
+export PATH="\$HOME/.local/bin:\$PATH"
 \`\`\`
 
 Then reload your shell:
@@ -320,7 +359,7 @@ Then reload your shell:
 source ~/.bashrc   # or source ~/.zshrc
 \`\`\`
 
-### 5. Clone the ai-coding monorepo (required for pipeline tool)
+### 5. Clone the ai-coding monorepo (required for all tools)
 
 If you have not already cloned it:
 
@@ -348,14 +387,21 @@ cd ~/Projects/ai-coding    && git pull
 # Re-generate
 cd ~/Projects/home-manager && ./generate-tarball.sh
 
-# Clean re-install (removes stale files from renamed/removed agents or skills)
+# Clean re-install (removes stale files from renamed/removed agents, skills, or bin wrappers)
 rm -rf ~/.config/opencode
+rm -f ~/.local/bin/$(join_comma "${BIN_NAMES[@]}" | tr ', ' ' ' | xargs -n1 echo | sed 's/^/~\/.local\/bin\//') 2>/dev/null || true
 tar xzf ~/Projects/home-manager/opencode-setup-\$(date +%Y-%m-%d).tar.gz -C ~/
 \`\`\`
 
-> **Why clean?** If an agent or skill is renamed or removed upstream, the old
-> file remains in \`~/.config/opencode/\` after a plain re-extract. A clean
-> re-install ensures your config exactly matches the source.
+> **Why clean?** If an agent, skill, or bin wrapper is renamed or removed
+> upstream, the old file remains after a plain re-extract. A clean re-install
+> ensures your config exactly matches the source.
+
+For a simpler clean of bin wrappers, remove them by name:
+
+\`\`\`bash
+rm -f $(for b in "${BIN_NAMES[@]}"; do printf '~/.local/bin/%s ' "$b"; done)
+\`\`\`
 
 ---
 
@@ -369,8 +415,30 @@ It requires:
   of \`ai-coding\`
 - Bun on PATH (the tool shells out to \`bun run pipeline\`)
 
-If you do not need pipeline support, the rest of the setup (agents, skills,
-commands, config) works fine without it.
+---
+
+## The codebase-retrieval tool and CLI wrapper
+
+\`codebase-retrieval.ts\` performs semantic code search over indexed repositories.
+It requires Ollama running locally with the \`nomic-embed-text\` model pulled.
+
+The \`codebase-retrieval\` and \`index-codebase\` CLI wrappers (in \`~/.local/bin/\`)
+let you run these operations directly from the terminal:
+
+\`\`\`bash
+# Index the current repository
+index-codebase
+
+# Search the current repository
+codebase-retrieval "hash-based staleness check"
+\`\`\`
+
+Both wrappers require:
+- \`AI_CODING_MONOREPO\` set in your shell profile (see step 4 above)
+- \`~/.local/bin\` on your PATH (see step 4 above)
+
+If you do not need codebase search, the rest of the setup (agents, skills,
+commands, pipeline tool, config) works fine without Ollama.
 README
 
 # ---------------------------------------------------------------------------
@@ -378,7 +446,7 @@ README
 # ---------------------------------------------------------------------------
 
 info "Packing tarball..."
-tar czf "$TARBALL" -C "$STAGING" .config
+tar czf "$TARBALL" -C "$STAGING" .config .local
 
 TARBALL_SIZE="$(du -sh "$TARBALL" | cut -f1)"
 info "Created: $TARBALL ($TARBALL_SIZE)"
@@ -395,6 +463,7 @@ if [ "$CLEAN_REMINDER" = true ]; then
   echo "│  To ensure stale files are removed before extracting, run:     │"
   echo "│                                                                 │"
   echo "│    rm -rf ~/.config/opencode                                    │"
+  echo "│    rm -f ~/.local/bin/{$(join_comma "${BIN_NAMES[@]}")}         │"
   echo "│    tar xzf $(basename "$TARBALL") -C ~/          │"
   echo "│                                                                 │"
   echo "│  See README-install.md inside the tarball for full details.    │"

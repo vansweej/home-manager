@@ -60,13 +60,14 @@ and run `home-manager switch`.
 | Agents | `opencode/agents/` | `*.md` files | Nix store copy |
 | Skills | `opencode/skills/` | Subdirectories (each must contain `SKILL.md`) | Nix store copy |
 | Commands | `opencode/commands/` | `*.md` files | Nix store copy |
-| Tools | `opencode/tools/` | `*.ts` files | `mkOutOfStoreSymlink` → ai-coding repo |
+| Tools | `opencode/tools/` | `*.ts` files | `mkOutOfStoreSymlink` → home-manager repo |
+| Bin wrappers | `opencode/bin/` | All files | Nix store copy, executable bit set |
 
-**Tool marker convention:** Files in `opencode/tools/` are marker files only.
-The ai-coding repo (`~/Projects/ai-coding/.opencode/tools/`) is the authoritative
-source. Markers exist so `builtins.readDir` can register the tool for deployment.
-At runtime, `~/.config/opencode/tools/<name>.ts` is a live symlink into the
-ai-coding repo, so bun can resolve `node_modules` relative to the file.
+**Tool deployment:** Files in `opencode/tools/` are full TypeScript implementations
+deployed as live symlinks pointing to `~/Projects/home-manager/opencode/tools/`.
+Using `mkOutOfStoreSymlink` (rather than a Nix store copy) lets bun resolve
+`node_modules` relative to the file at runtime. The tools delegate to the
+ai-coding monorepo at runtime via subprocess — they do not import code from it.
 
 ### Dotfiles (`home.file`)
 
@@ -76,9 +77,12 @@ ai-coding repo, so bun can resolve `node_modules` relative to the file.
 | `~/.config/opencode/skills/*/SKILL.md` | `opencode/skills/*/SKILL.md` | Store copy (auto-discovered) |
 | `~/.config/opencode/agents/*.md` | `opencode/agents/*.md` | Store copy (auto-discovered) |
 | `~/.config/opencode/commands/*.md` | `opencode/commands/*.md` | Store copy (auto-discovered) |
-| `~/.config/opencode/tools/pipeline.ts` | `~/Projects/ai-coding/.opencode/tools/pipeline.ts` | Live symlink (auto-discovered) |
-| `~/.config/opencode/tools/skill-retrieval.ts` | `~/Projects/ai-coding/.opencode/tools/skill-retrieval.ts` | Live symlink (auto-discovered) |
-| `~/.config/opencode/opencode.json` | `~/Projects/ai-coding/opencode/mappings/opencode.json` | Live symlink |
+| `~/.config/opencode/tools/pipeline.ts` | `~/Projects/home-manager/opencode/tools/pipeline.ts` | Live symlink (auto-discovered) |
+| `~/.config/opencode/tools/skill-retrieval.ts` | `~/Projects/home-manager/opencode/tools/skill-retrieval.ts` | Live symlink (auto-discovered) |
+| `~/.config/opencode/tools/codebase-retrieval.ts` | `~/Projects/home-manager/opencode/tools/codebase-retrieval.ts` | Live symlink (auto-discovered) |
+| `~/.config/opencode/opencode.json` | `~/Projects/ai-coding/opencode.json` | Live symlink |
+| `~/.local/bin/codebase-retrieval` | `opencode/bin/codebase-retrieval` | Store copy, executable (auto-discovered) |
+| `~/.local/bin/index-codebase` | `opencode/bin/index-codebase` | Store copy, executable (auto-discovered) |
 
 ### Session variables
 
@@ -89,6 +93,7 @@ ai-coding repo, so bun can resolve `node_modules` relative to the file.
 ### Session path
 
 - `$HOME/.opencode/bin`
+- `$HOME/.local/bin`
 
 ### Activation scripts
 

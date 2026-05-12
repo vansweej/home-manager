@@ -17,14 +17,21 @@
 
 set -euo pipefail
 
+# Resolve bun — probe common install locations before falling back to PATH.
+# Covers: default bun installer (~/.bun), Nix user/system profiles, system paths.
+_bun="bun"
+for _candidate in "$HOME/.bun/bin/bun" "$HOME/.nix-profile/bin/bun" "/nix/var/nix/profiles/default/bin/bun" "/usr/local/bin/bun" "/usr/bin/bun"; do
+  [ -x "$_candidate" ] && _bun="$_candidate" && break
+done
+
 monorepo="${AI_CODING_MONOREPO:?AI_CODING_MONOREPO is not set — run: home-manager switch}"
 
 # If --workspace is already provided, forward everything as-is
 for arg in "$@"; do
   if [[ "$arg" == "--workspace" ]]; then
-    exec bun run --cwd "$monorepo" codebase-retrieval "$@"
+    exec "$_bun" run --cwd "$monorepo" codebase-retrieval "$@"
   fi
 done
 
 # Otherwise inject --workspace $PWD so results are scoped to the current repo
-exec bun run --cwd "$monorepo" codebase-retrieval "$@" --workspace "$PWD"
+exec "$_bun" run --cwd "$monorepo" codebase-retrieval "$@" --workspace "$PWD"

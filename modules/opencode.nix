@@ -78,7 +78,7 @@ in
     # reflected immediately without re-running home-manager switch.
     ".config/opencode/opencode.json".source =
       config.lib.file.mkOutOfStoreSymlink
-        "${aiCodingRepo}/opencode/mappings/opencode.json";
+        "${aiCodingRepo}/opencode.json";
 
     # Tool dependencies — nix-store copy. Provides @opencode-ai/plugin to the
     # tools symlinked into ~/.config/opencode/tools/. bun install runs against

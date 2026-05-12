@@ -6,7 +6,9 @@ for multiple machines, managed from a single repository.
 | Profile | Machine | OS |
 |---|---|---|
 | `oryp6` | Oryx Pro 6 | x86_64-linux |
-| `M1` | MacBook (work) | aarch64-darwin |
+| `M1` | MacBook (work, retiring) | aarch64-darwin |
+| `M5` | MacBook (work) | aarch64-darwin |
+| `parallels` | Parallels Linux VM | x86_64-linux |
 
 ## What this manages
 
@@ -40,6 +42,13 @@ git clone git@github.com:vansweej/home-manager.git ~/Projects/home-manager
 home-manager switch --flake ~/Projects/home-manager#M1
 ```
 
+### M5 MacBook (macOS)
+
+```bash
+git clone git@github.com:vansweej/home-manager.git ~/Projects/home-manager
+home-manager switch --flake ~/Projects/home-manager#M5
+```
+
 On first activation, the following happen automatically:
 
 1. `~/Projects/ai-coding` is cloned from GitHub
@@ -61,7 +70,7 @@ After editing any Nix-managed file:
 home-manager switch --flake ~/Projects/home-manager#oryp6
 
 # macOS
-home-manager switch --flake ~/Projects/home-manager#M1
+home-manager switch --flake ~/Projects/home-manager#M5
 ```
 
 Files managed with `mkOutOfStoreSymlink` (nvim plugins, `opencode.json`) update
@@ -72,7 +81,7 @@ immediately without re-running switch.
 ```bash
 nix flake check
 nix build .#homeConfigurations.oryp6.activationPackage
-nix build .#homeConfigurations.M1.activationPackage
+nix build .#homeConfigurations.M5.activationPackage
 ```
 
 ## Setting up OpenCode without Nix
@@ -84,7 +93,9 @@ tarball on your machine and extracting it into `~/.config/opencode/`.
 ### Prerequisites
 
 - [OpenCode CLI](https://opencode.ai) installed
-- [Bun](https://bun.sh) runtime installed (`brew install bun` on macOS)
+- [Bun](https://bun.sh) runtime installed
+  - macOS: `brew install bun`
+  - Linux / WSL: `curl -fsSL https://bun.sh/install | bash`
 - Git
 
 ### Steps
@@ -120,6 +131,9 @@ cp -r ~/.config/opencode ~/.config/opencode.bak   # optional backup
 tar xzf opencode-setup-$(date +%Y-%m-%d).tar.gz -C ~/
 ```
 
+This places OpenCode config in `~/.config/opencode/` and CLI wrapper scripts
+(`codebase-retrieval`, `index-codebase`) in `~/.local/bin/`.
+
 **5. Configure your shell profile**
 
 Add to `~/.bashrc`, `~/.zshrc`, or equivalent:
@@ -127,6 +141,7 @@ Add to `~/.bashrc`, `~/.zshrc`, or equivalent:
 ```bash
 export AI_CODING_MONOREPO="$HOME/Projects/ai-coding"
 export PATH="$HOME/.opencode/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
 ```
 
 Then reload: `source ~/.bashrc` (or `~/.zshrc`).
@@ -142,6 +157,7 @@ cd ~/Projects/home-manager && git pull
 cd ~/Projects/ai-coding    && git pull
 cd ~/Projects/home-manager && ./generate-tarball.sh --clean
 rm -rf ~/.config/opencode
+rm -f ~/.local/bin/codebase-retrieval ~/.local/bin/index-codebase
 tar xzf ~/Projects/home-manager/opencode-setup-$(date +%Y-%m-%d).tar.gz -C ~/
 ```
 
