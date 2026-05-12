@@ -1,8 +1,12 @@
-{ pkgs, lib, config, ... }:
+{ pkgs, lib, config, inputs, meta, ... }:
 
 let
-  opencodeDir  = ../opencode;
-  aiCodingRepo = "${config.home.homeDirectory}/Projects/ai-coding";
+  opencodeDir = ../opencode;
+  # The ai-coding Nix package: full source tree + node_modules, built offline
+  # from the pinned flake input. Read-only in the store; bun run works fine
+  # from read-only paths (verified). No git clone or bun install at activation.
+  aiCodingPkg  = inputs.ai-coding.packages.${meta.system}.default;
+  aiCodingRepo = "${aiCodingPkg}";
 
   # ── Auto-discover agents ────────────────────────────────────────────────────
   # Every .md file in opencode/agents/ is deployed as a nix-store copy.
@@ -74,11 +78,9 @@ in
     # Global agent instructions — nix-store copy.
     ".config/opencode/AGENTS.md".source = opencodeDir + "/AGENTS.md";
 
-    # OpenCode config — live symlink so edits in the ai-coding repo are
-    # reflected immediately without re-running home-manager switch.
-    ".config/opencode/opencode.json".source =
-      config.lib.file.mkOutOfStoreSymlink
-        "${aiCodingRepo}/opencode.json";
+    # OpenCode config — sourced from the pinned ai-coding Nix store path.
+    # To update: nix flake update ai-coding && home-manager switch.
+    ".config/opencode/opencode.json".source = "${aiCodingPkg}/opencode.json";
 
     # Tool dependencies — nix-store copy. Provides @opencode-ai/plugin to the
     # tools symlinked into ~/.config/opencode/tools/. bun install runs against
@@ -110,33 +112,18 @@ in
 
   # ── Activation scripts ──────────────────────────────────────────────────────
 
-  # Clone the ai-coding repo on first activation if it is not already present.
-  # Runs BEFORE writeBoundary so that mkOutOfStoreSymlink entries pointing into
-  # ~/Projects/ai-coding/ are never dangling on a fresh machine.
-  home.activation.cloneAiCoding = lib.hm.dag.entryBefore [ "writeBoundary" ] ''
-    if [ ! -d "$HOME/Projects/ai-coding" ]; then
-      $DRY_RUN_CMD mkdir -p "$HOME/Projects"
-      $DRY_RUN_CMD ${pkgs.git}/bin/git clone \
-        https://github.com/vansweej/ai-coding.git \
-        "$HOME/Projects/ai-coding"
-    fi
-  '';
-
-  # Install dependencies for both the monorepo root (@ai-coding/skills and
-  # other workspace packages) and ~/.config/opencode/ (@opencode-ai/plugin).
+  # Install dependencies for ~/.config/opencode/ (@opencode-ai/plugin, consumed
+  # by the tools symlinked into ~/.config/opencode/tools/) and for the
+  # home-manager opencode directory (bun resolves @opencode-ai/plugin relative
+  # to the tool file's real path via the symlink chain).
+  #
+  # The ai-coding monorepo itself is now a Nix package (no clone or bun install
+  # needed at activation time — node_modules are baked into the store path).
   #
   # Uses a bun.lock SHA-256 stamp to skip redundant installs — bun install
   # only runs when the lockfile has changed since the last successful install.
-  #
-  # The stamp is written ONLY on success, so a failed install (e.g. network
-  # down, native binary unavailable) leaves no stamp and will be retried on
-  # the next home-manager switch.
-  #
-  # bun install is wrapped with an if/then so failures degrade gracefully:
-  # tools won't work until the next successful switch, but all other config
-  # (agents, skills, shell, nvim) is still deployed.
   home.activation.installAiCodingDeps =
-    lib.hm.dag.entryBetween [ "writeBoundary" ] [ "cloneAiCoding" ] ''
+    lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       _oc_install() {
         local dir="$1"
         # Use bun.lock for change detection when available; fall back to
@@ -156,7 +143,6 @@ in
           echo "$lockHash" > "$stamp"
         fi
       }
-      _oc_install "$HOME/Projects/ai-coding"
       _oc_install "$HOME/.config/opencode"
       _oc_install "$HOME/Projects/home-manager/opencode"
     '';

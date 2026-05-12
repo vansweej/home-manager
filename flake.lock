@@ -1,5 +1,26 @@
 {
   "nodes": {
+    "ai-coding": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1778611645,
+        "narHash": "sha256-MmynhWGlW9z7p+bV6JsEx4fmYoTspov1VTI+fSLg7gM=",
+        "owner": "vansweej",
+        "repo": "ai-coding",
+        "rev": "9445caeddad76a6bbb525aa1a750197fe726f029",
+        "type": "github"
+      },
+      "original": {
+        "owner": "vansweej",
+        "ref": "feat/nix-flake",
+        "repo": "ai-coding",
+        "type": "github"
+      }
+    },
     "flake-utils": {
       "inputs": {
         "systems": "systems"
@@ -90,6 +111,7 @@
     },
     "root": {
       "inputs": {
+        "ai-coding": "ai-coding",
         "home-manager": "home-manager",
         "nixgl": "nixgl",
         "nixpkgs": "nixpkgs_2"

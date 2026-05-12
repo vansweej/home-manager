@@ -8,6 +8,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nixgl.url = "github:guibou/nixGL";
+    ai-coding = {
+      url = "github:vansweej/ai-coding/feat/nix-flake";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
