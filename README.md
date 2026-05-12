@@ -9,6 +9,7 @@ for multiple machines, managed from a single repository.
 | `M1` | MacBook (work, retiring) | aarch64-darwin |
 | `M5` | MacBook (work) | aarch64-darwin |
 | `parallels` | Parallels Linux VM | x86_64-linux |
+| `parallels-ubuntu` | Parallels Ubuntu VM | aarch64-linux |
 
 ## What this manages
 
@@ -18,7 +19,7 @@ for multiple machines, managed from a single repository.
 - **OpenCode** — agent profiles, skill definitions, pipeline commands and tool
 - **Docker** — rootless daemon via systemd user service (oryp6 only)
 - **Fonts** — FiraCode Nerd Font
-- **Activation** — clones `ai-coding` repo on first run if not present
+- **ai-coding** — runtime monorepo fetched from GitHub and built into the Nix store; no manual clone needed
 
 ## Quick start
 
@@ -26,7 +27,6 @@ for multiple machines, managed from a single repository.
 
 - Nix installed with flakes enabled
 - Home Manager installed (standalone)
-- Internet access (clones two repos on first activation)
 
 ### oryp6 (Linux)
 
@@ -51,9 +51,8 @@ home-manager switch --flake ~/Projects/home-manager#M5
 
 On first activation, the following happen automatically:
 
-1. `~/Projects/ai-coding` is cloned from GitHub
-2. `~/.config/nvim` is bootstrapped from the LazyVim starter
-3. All packages, dotfiles, and symlinks are installed
+1. `~/.config/nvim` is bootstrapped from the LazyVim starter
+2. All packages, dotfiles, and symlinks are installed
 
 Open Neovim after activation — LazyVim bootstraps plugins automatically:
 
@@ -113,10 +112,9 @@ cd ~/Projects/home-manager
 ./generate-tarball.sh
 ```
 
-The script automatically clones the `ai-coding` repo as a sibling
-(`~/Projects/ai-coding`) if it is not already present, then runs
-`bun install` to bundle `node_modules` and packs everything into
-`opencode-setup-YYYY-MM-DD.tar.gz`.
+The script automatically packs agents, skills, commands, tools, and bin wrappers
+into `opencode-setup-YYYY-MM-DD.tar.gz`. The ai-coding monorepo runtime is
+fetched separately — see step 5 below.
 
 **3. Inspect before applying (recommended)**
 
@@ -139,10 +137,13 @@ This places OpenCode config in `~/.config/opencode/` and CLI wrapper scripts
 Add to `~/.bashrc`, `~/.zshrc`, or equivalent:
 
 ```bash
-export AI_CODING_MONOREPO="$HOME/Projects/ai-coding"
+export AI_CODING_MONOREPO="$HOME/Projects/ai-coding"   # path to the ai-coding clone
 export PATH="$HOME/.opencode/bin:$PATH"
 export PATH="$HOME/.local/bin:$PATH"
 ```
+
+> **Nix users:** `AI_CODING_MONOREPO` is set automatically by Home Manager to the
+> Nix store path of the ai-coding package. No manual export needed.
 
 Then reload: `source ~/.bashrc` (or `~/.zshrc`).
 
@@ -154,8 +155,7 @@ Pull both repos, regenerate, and do a clean re-extract to avoid stale files:
 
 ```bash
 cd ~/Projects/home-manager && git pull
-cd ~/Projects/ai-coding    && git pull
-cd ~/Projects/home-manager && ./generate-tarball.sh --clean
+./generate-tarball.sh --clean
 rm -rf ~/.config/opencode
 rm -f ~/.local/bin/codebase-retrieval ~/.local/bin/index-codebase
 tar xzf ~/Projects/home-manager/opencode-setup-$(date +%Y-%m-%d).tar.gz -C ~/

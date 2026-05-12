@@ -80,7 +80,7 @@ ai-coding monorepo at runtime via subprocess — they do not import code from it
 | `~/.config/opencode/tools/pipeline.ts` | `~/Projects/home-manager/opencode/tools/pipeline.ts` | Live symlink (auto-discovered) |
 | `~/.config/opencode/tools/skill-retrieval.ts` | `~/Projects/home-manager/opencode/tools/skill-retrieval.ts` | Live symlink (auto-discovered) |
 | `~/.config/opencode/tools/codebase-retrieval.ts` | `~/Projects/home-manager/opencode/tools/codebase-retrieval.ts` | Live symlink (auto-discovered) |
-| `~/.config/opencode/opencode.json` | `~/Projects/ai-coding/opencode.json` | Live symlink |
+| `~/.config/opencode/opencode.json` | ai-coding Nix store path (`opencode.json`) | Store copy |
 | `~/.local/bin/codebase-retrieval` | `opencode/bin/codebase-retrieval` | Store copy, executable (auto-discovered) |
 | `~/.local/bin/index-codebase` | `opencode/bin/index-codebase` | Store copy, executable (auto-discovered) |
 
@@ -88,7 +88,7 @@ ai-coding monorepo at runtime via subprocess — they do not import code from it
 
 | Variable | Value |
 |---|---|
-| `AI_CODING_MONOREPO` | `$HOME/Projects/ai-coding` |
+| `AI_CODING_MONOREPO` | Nix store path of the ai-coding package (set from `inputs.ai-coding.packages.${system}.default`) |
 
 ### Session path
 
@@ -99,34 +99,37 @@ ai-coding monorepo at runtime via subprocess — they do not import code from it
 
 | Script | Trigger | Action |
 |---|---|---|
-| `cloneAiCoding` | Before `writeBoundary` | Clones `ai-coding` repo into `~/Projects/ai-coding` on first run |
-| `installAiCodingDeps` | After `cloneAiCoding`, before `writeBoundary` | Installs monorepo root and `.opencode/` dependencies with stamp-based skip |
+| `installAiCodingDeps` | After `writeBoundary` | Installs `@opencode-ai/plugin` in `~/.config/opencode/` and `~/Projects/home-manager/opencode/` with stamp-based skip |
 
 #### `installAiCodingDeps` — stamp-based install
 
-Runs `bun install` in both `~/Projects/ai-coding` (monorepo root, installs
-`@ai-coding/skills` and other workspace packages) and
-`~/Projects/ai-coding/.opencode` (installs `@opencode-ai/plugin`).
+Runs `bun install` in `~/.config/opencode/` (provides `@opencode-ai/plugin` to the
+OpenCode tools symlinked there) and `~/Projects/home-manager/opencode/` (same
+dependency, resolved via the symlink chain at runtime).
+
+The ai-coding monorepo itself is a Nix package — `node_modules` are baked into the
+store at build time. No `bun install` is needed for it at activation.
 
 A SHA-256 hash of `bun.lock` is stored in `node_modules/.hm-install-stamp`.
 On subsequent switches the stamp is compared to the current lockfile — if they
 match, install is skipped. The stamp is written **only on success**, so a failed
-install (network down, native binary unavailable) leaves no stamp and is retried
-on the next switch. A failed install degrades gracefully: tools won't work until
-the next successful switch, but all other config is still deployed.
+install leaves no stamp and is retried on the next switch.
 
 ---
 
 ## `modules/linux.nix` — Linux only
 
-Applied to all `x86_64-linux` machines.
+Applied to all Linux machines (`x86_64-linux` and `aarch64-linux`).
 
 ### Packages
 
 | Package | Purpose |
 |---|---|
-| `nixgl.nixGLIntel` | OpenGL wrapper required for GPU apps outside NixOS |
-| `ghostty-nixgl` | Shell script that runs `ghostty` via `nixGLIntel` |
+| `nixgl.nixGLIntel` | OpenGL wrapper required for GPU apps outside NixOS — only installed when `meta.nixGL = true` |
+| `ghostty-nixgl` | Shell script that runs `ghostty` via `nixGLIntel` — only when `meta.nixGL = true` |
+
+The nixGL wrapper and `.desktop` file are guarded by `meta.nixGL`. Machines that
+don't need it (e.g. `parallels-ubuntu`) set no `nixGL` field and get neither.
 
 ### Dotfiles
 
@@ -186,8 +189,22 @@ Currently a placeholder. Add M1-specific packages and settings here as needed.
 
 Applied only to the `M5` profile (`aarch64-darwin`, username `janvansweevelt`).
 
-Currently a placeholder. Add M5-specific packages and settings here as needed —
-for example, local model tooling (ollama, llama.cpp, MLX).
+Overrides two shared defaults with M5-specific values:
+
+- **`opencode.json`** — replaces the shared store copy with a static file that
+  registers the local Ollama provider (`gemma4:26b`) alongside the default
+  GitHub Copilot model.
+- **`local.md` agent** — replaces the shared local agent with an M5-specific
+  version whose frontmatter sets `model: ollama/gemma4:26b`.
+
+---
+
+## `modules/machines/parallels-ubuntu.nix` — Parallels Ubuntu VM only
+
+Applied only to the `parallels-ubuntu` profile (`aarch64-linux`, username `parallels`).
+
+Currently a placeholder. Used as a test bed for the Nix flake-based ai-coding
+setup on `aarch64-linux` before promoting changes to M5 and oryp6.
 
 ---
 

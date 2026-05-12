@@ -38,6 +38,7 @@ home-manager options.
 | `homeDirectory` | string | Absolute path to the home directory |
 | `stateVersion` | string | Home Manager state version — use `"25.11"` for new machines |
 | `cudaSupport` | bool | Enables CUDA in nixpkgs; only `true` on machines with an NVIDIA GPU |
+| `nixGL` | bool | Optional, default `false`. Set `true` on Linux machines that need the nixGL OpenGL wrapper (e.g. oryp6) |
 
 ## Step 2 — Create the machine module
 
@@ -139,9 +140,8 @@ home-manager switch --flake ~/Projects/home-manager#<name>
 
 On first activation:
 
-1. `~/Projects/ai-coding` is cloned automatically
-2. `~/.config/nvim` is bootstrapped from the LazyVim starter
-3. All packages, dotfiles, and symlinks are installed
+1. `~/.config/nvim` is bootstrapped from the LazyVim starter
+2. All packages, dotfiles, and symlinks are installed
 
 ## Adding platform-specific config
 
@@ -164,12 +164,18 @@ You have `systemd.user.services` in a module that is evaluated on Darwin. Move i
 to the Linux machine module (`modules/machines/<name>.nix`) and ensure the machine
 metadata has `system = "x86_64-linux"`.
 
-**`error: attribute 'nixgl' missing`**  
-You are referencing `pkgs.nixgl.*` in a module that is evaluated on Darwin. The
-nixGL overlay is only applied on Linux. Move the reference to `modules/linux.nix`
-or a Linux machine module.
+**`error: attribute 'nixgl' missing`**
+You are referencing `pkgs.nixgl.*` in a module that is evaluated on Darwin, or on
+a Linux machine where `meta.nixGL` is not set to `true`. The nixGL overlay is only
+applied on Linux, and the nixGL wrapper packages are only added when `meta.nixGL = true`.
+Move the reference to `modules/linux.nix` behind the `lib.mkIf (meta.nixGL or false)` guard.
 
-**Symlinks dangling after first activation**  
-The `cloneAiCoding` activation script should have run before `writeBoundary`. If
-it failed (e.g. no internet), re-run `home-manager switch` after restoring
-connectivity.
+**`error: hash mismatch in fixed-output derivation`**
+The ai-coding Nix package uses a per-platform FOD hash for the bun cache. If you
+are adding a new platform, build the ai-coding package in isolation first to get
+the correct hash:
+```bash
+nix build github:vansweej/ai-coding#packages.<system>.default 2>&1 | grep "got:"
+```
+Update `bunCacheHashes` in `ai-coding/flake.nix`, push to `main`, then
+`nix flake update ai-coding` in home-manager and commit `flake.lock`.

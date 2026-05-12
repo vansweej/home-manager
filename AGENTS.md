@@ -13,15 +13,17 @@ machines/
   oryp6.nix                        # Metadata: system, username, homeDir, flags (x86_64-linux)
   m1.nix                           # Metadata: system, username, homeDir, flags (aarch64-darwin)
   m5.nix                           # Metadata: system, username, homeDir, flags (aarch64-darwin)
+  parallels-ubuntu.nix             # Metadata: system, username, homeDir, flags (aarch64-linux)
 modules/
   common.nix                       # Universal: programs, fonts, nvim symlinks, bootstrapNvim
   opencode.nix                     # OpenCode: auto-discovery, activation, session vars
-  linux.nix                        # Linux-only: nixGL wrapper, .desktop file
+  linux.nix                        # Linux-only: nixGL wrapper (opt-in), .desktop file
   darwin.nix                       # macOS-only: placeholder for Darwin-specific config
   machines/
     oryp6.nix                      # oryp6-only: rootless Docker, systemd service
     m1.nix                         # M1-only: placeholder for M1-specific config
-    m5.nix                         # M5-only: placeholder for M5-specific config
+    m5.nix                         # M5-only: Ollama provider config, local agent override
+    parallels-ubuntu.nix           # parallels-ubuntu-only: placeholder (test bed)
 opencode/AGENTS.md                 # Machine-wide OpenCode agent instructions
 opencode/skills/*/SKILL.md         # OpenCode skills deployed to ~/.config/opencode/skills/
 opencode/agents/*.md               # OpenCode agents deployed to ~/.config/opencode/agents/
@@ -247,9 +249,13 @@ home.packages = with pkgs; [
 | `nixpkgs` | `github:nixos/nixpkgs/nixos-unstable` | `allowUnfree = true`; `cudaSupport` per machine |
 | `home-manager` | `github:nix-community/home-manager` | Follows the same `nixpkgs` |
 | `nixgl` | `github:guibou/nixGL` | Overlay applied on Linux only; never on Darwin |
+| `ai-coding` | `github:vansweej/ai-coding` | Two-phase Nix derivation; `node_modules` baked in; pinned in `flake.lock` |
 
 The `nixgl.overlay` is conditionally applied in `mkHome` based on `isDarwin`,
 making `pkgs.nixgl.*` available only on Linux builds.
+
+The `ai-coding` input is updated with `nix flake update ai-coding`. Always commit
+`flake.lock` after updating and run `home-manager switch` to apply.
 
 ---
 
@@ -263,7 +269,7 @@ The `opencode/` directory mirrors the XDG deployment target exactly:
 | `opencode/skills/<name>/SKILL.md` | `~/.config/opencode/skills/<name>/SKILL.md` |
 | `opencode/agents/<name>.md` | `~/.config/opencode/agents/<name>.md` |
 | `opencode/commands/<name>.md` | `~/.config/opencode/commands/<name>.md` |
-| `opencode/tools/<name>.ts` | `~/.config/opencode/tools/<name>.ts` → symlink to ai-coding repo |
+| `opencode/tools/<name>.ts` | `~/.config/opencode/tools/<name>.ts` → symlink to `~/Projects/home-manager/opencode/tools/` |
 | `opencode/bin/<name>` | `~/.local/bin/<name>` (executable, nix-store copy) |
 
 All four categories are **auto-discovered** by `modules/opencode.nix` using
@@ -290,20 +296,27 @@ git add opencode/commands/my-command.md
 
 ### Adding a new OpenCode tool
 
-Tools are TypeScript files executed by bun at runtime. The ai-coding repo is
-the authoritative source; the home-manager repo holds only a **marker file**
-that `builtins.readDir` uses to register the tool for deployment.
+Tools are full TypeScript implementations that live in `opencode/tools/` in this
+repo. They are deployed as live symlinks to `~/Projects/home-manager/opencode/tools/`
+via `mkOutOfStoreSymlink`, so bun can resolve `node_modules` relative to the file
+at runtime. At runtime, tools delegate to the ai-coding monorepo via subprocess
+(`bun run --cwd $AI_CODING_MONOREPO <script>`).
 
-1. Implement the tool in `~/Projects/ai-coding/.opencode/tools/<name>.ts`
-2. Add a marker file in `opencode/tools/<name>.ts`:
-   ```ts
-   // Marker file — runtime resolves via mkOutOfStoreSymlink to ai-coding repo.
-   ```
-3. `git add opencode/tools/<name>.ts` and `home-manager switch`
+**Developer workflow (Nix):**
+1. Implement the tool in `opencode/tools/<name>.ts` in this repo
+2. `git add opencode/tools/<name>.ts` and `home-manager switch`
+3. The tool is live immediately — `mkOutOfStoreSymlink` means edits to the file
+   are picked up without re-running switch
+
+**When the tool shells out to ai-coding:**
+- Edit the underlying script in the ai-coding repo
+- Push to a branch, `nix flake update ai-coding` in home-manager, `home-manager switch`
+- Or point `AI_CODING_MONOREPO` at a local clone temporarily for fast iteration
 
 At runtime, `~/.config/opencode/tools/<name>.ts` is a live symlink to
-`~/Projects/ai-coding/.opencode/tools/<name>.ts`, so bun can resolve
-`node_modules` relative to the file.
+`~/Projects/home-manager/opencode/tools/<name>.ts`, so bun resolves
+`node_modules` from `~/.config/opencode/` (where `@opencode-ai/plugin` is installed
+by the `installAiCodingDeps` activation script).
 
 ---
 
