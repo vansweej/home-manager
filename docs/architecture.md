@@ -150,6 +150,31 @@ store would break that resolution. The tools are full implementations that deleg
 to the ai-coding monorepo at runtime via subprocess (`bun run <script> --cwd
 $AI_CODING_MONOREPO`). They do not import code from ai-coding.
 
+## `opencode.json` config flow
+
+`opencode.json` is the single source of truth for base OpenCode permissions. It
+lives in the `ai-coding` repo and flows through the Nix build into each machine.
+M5 is the only machine that overrides it — injecting only the Ollama provider via
+`lib.recursiveUpdate` so permissions are always inherited from upstream.
+
+```mermaid
+graph LR
+    AIC["ai-coding/opencode.json<br/>source of truth<br/>model · compaction · permissions"]
+    NS["Nix store<br/>aiCodingPkg"]
+    ON["opencode.nix<br/>home.file source"]
+
+    AIC -->|nix build| NS
+    NS -->|builtins.readFile\nbuiltins.fromJSON| ON
+
+    ON -->|inherits as-is| M1["M1"]
+    ON -->|inherits as-is| OR["oryp6"]
+    ON -->|inherits as-is| PA["parallels\nparallels-ubuntu"]
+    ON -->|"lib.recursiveUpdate\n+ Ollama provider only"| M5["M5"]
+```
+
+To update permissions for all machines: edit `opencode.json` in `ai-coding`,
+push, then run `nix flake update ai-coding` in this repo and `home-manager switch`.
+
 ## Flake inputs
 
 | Input | Source | Notes |

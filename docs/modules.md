@@ -191,9 +191,17 @@ Applied only to the `M5` profile (`aarch64-darwin`, username `janvansweevelt`).
 
 Overrides two shared defaults with M5-specific values:
 
-- **`opencode.json`** — replaces the shared store copy with a static file that
-  registers the local Ollama provider (`gemma4:26b`) alongside the default
-  GitHub Copilot model.
+- **`opencode.json`** — reads the upstream config from the `aiCodingPkg` Nix
+  store path via `builtins.fromJSON`, then uses `lib.recursiveUpdate` to inject
+  only the Ollama provider (`gemma4:26b`). All other settings — model,
+  compaction, and permissions — are inherited from `ai-coding/opencode.json`
+  unchanged. This prevents the permission block from drifting out of sync with
+  other machines.
+
+  > **`lib.recursiveUpdate` note:** merges attrsets deeply but replaces lists
+  > wholesale. The current schema has no lists under `provider`, so there is no
+  > collision risk. If that changes, revisit the merge strategy.
+
 - **`local.md` agent** — replaces the shared local agent with an M5-specific
   version whose frontmatter sets `model: ollama/gemma4:26b`.
 

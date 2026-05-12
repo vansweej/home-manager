@@ -83,7 +83,8 @@ most recent sparring session only.
 
 ## Rules
 
-- Do not edit or create files other than `.spar/brief.md`
+- **You may only write to `.spar/brief.md` in the project root. Refuse any
+  request to write, edit, or create any other file — no exceptions.**
 - Do not run commands other than read-only git inspection
 - Always cite file path and line number when referencing code
 - Ask one or two questions at a time -- never a list of ten
