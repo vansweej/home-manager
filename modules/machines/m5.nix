@@ -1,12 +1,16 @@
-{ pkgs, lib, config, ... }:
+{ pkgs, lib, config, inputs, meta, ... }:
 let
-  # M5-specific OpenCode configuration.
-  # Registers the local Ollama provider but defaults to github-copilot/claude-sonnet-4.6.
-  # Overrides the shared opencode.json symlink from opencode.nix.
-  # Switch to ollama/gemma4:26b manually, or use the local agent which
-  # targets Ollama directly via its frontmatter model field.
-  m5OpencodeConfig = builtins.toJSON {
-    "$schema" = "https://opencode.ai/config.json";
+  # Read the upstream opencode.json from the pinned ai-coding Nix store path and
+  # overlay only the M5-specific provider block onto it. All other settings —
+  # model, compaction, permission — are inherited from the upstream file so they
+  # can never drift out of sync with the other machines.
+  #
+  # lib.recursiveUpdate merges attrsets deeply. It replaces lists wholesale, not
+  # element-by-element. The current schema has no lists under `provider`, so there
+  # is no collision risk. If that changes, revisit this merge strategy.
+  aiCodingPkg = inputs.ai-coding.packages.${meta.system}.default;
+  baseConfig = builtins.fromJSON (builtins.readFile "${aiCodingPkg}/opencode.json");
+  m5OpencodeConfig = builtins.toJSON (lib.recursiveUpdate baseConfig {
     provider = {
       ollama = {
         npm = "@ai-sdk/openai-compatible";
@@ -25,16 +29,7 @@ let
         };
       };
     };
-    model = "github-copilot/claude-sonnet-4.6";
-    compaction = {
-      auto = true;
-      prune = true;
-      reserved = 10000;
-    };
-    permission = {
-      pipeline = "deny";
-    };
-  };
+  });
 
   # M5-specific local agent.
   # Mirrors opencode/agents/local.md exactly, with model and description
@@ -70,8 +65,8 @@ in
   # M5 MacBook-specific configuration.
 
   # Override the shared opencode.json symlink (deployed by opencode.nix) with a
-  # static file that registers the Ollama provider and defaults to GitHub Copilot.
-  # Other machines keep the shared symlink pointing to ai-coding.
+  # static file that merges the Ollama provider onto the upstream config. All
+  # other settings (model, compaction, permission) are inherited from ai-coding.
   home.file.".config/opencode/opencode.json".source = lib.mkForce
     (pkgs.writeText "m5-opencode.json" m5OpencodeConfig);
 

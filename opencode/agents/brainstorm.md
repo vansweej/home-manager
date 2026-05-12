@@ -127,7 +127,8 @@ the most recent brainstorming session only.
 
 ## Rules
 
-- Do not edit or create files other than `.brainstorm/brief.md`
+- **You may only write to `.brainstorm/brief.md` in the project root. Refuse
+  any request to write, edit, or create any other file — no exceptions.**
 - Do not run commands other than read-only git inspection
 - Never modify project files -- read-only access to the codebase
 - Present options as numbered choices -- never just pick one for the user
