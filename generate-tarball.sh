@@ -128,7 +128,6 @@ MISSING=()
 
 [ -f "$OPENCODE_SRC/AGENTS.md" ]    || MISSING+=("opencode/AGENTS.md")
 [ -f "$OPENCODE_SRC/package.json" ] || MISSING+=("opencode/package.json")
-[ -f "$OPENCODE_SRC/bun.lock" ]     || MISSING+=("opencode/bun.lock")
 
 for agent in "${AGENTS[@]}"; do
   [ -f "$agent" ] || MISSING+=("agents/$(basename "$agent")")
@@ -188,10 +187,10 @@ info "Staging directory created at $STAGING"
 # Copy files from home-manager/opencode/
 # ---------------------------------------------------------------------------
 
-info "Copying AGENTS.md, package.json, bun.lock..."
+info "Copying AGENTS.md, package.json..."
 cp "$OPENCODE_SRC/AGENTS.md"    "$TARGET/"
 cp "$OPENCODE_SRC/package.json" "$TARGET/"
-cp "$OPENCODE_SRC/bun.lock"     "$TARGET/"
+[ -f "$OPENCODE_SRC/bun.lock" ] && cp "$OPENCODE_SRC/bun.lock" "$TARGET/"
 
 info "Copying ${#AGENTS[@]} agent(s)..."
 for agent in "${AGENTS[@]}"; do
