@@ -16,7 +16,6 @@
       },
       "original": {
         "owner": "vansweej",
-        "ref": "feat/nix-flake",
         "repo": "ai-coding",
         "type": "github"
       }

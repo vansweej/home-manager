@@ -9,7 +9,7 @@
     };
     nixgl.url = "github:guibou/nixGL";
     ai-coding = {
-      url = "github:vansweej/ai-coding/feat/nix-flake";
+      url = "github:vansweej/ai-coding";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
