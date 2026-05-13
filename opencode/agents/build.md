@@ -2,9 +2,21 @@
 description: Full development using Claude Sonnet 4.6 with all skills and pipeline tools
 mode: primary
 model: github-copilot/claude-sonnet-4.6
-temperature: 0.5
+temperature: 0.2
+steps: 10
 permission:
   pipeline: allow
+  edit: allow
+  write: allow
+  bash:
+    "*": allow
+    "rm -rf /*": deny
+    "rm -rf /": deny
+    "dd *": deny
+    "mkfs*": deny
+    "shutdown*": deny
+    "reboot*": deny
+    ":(){:|:&};:": deny
 ---
 
 You are a senior software engineer running on Claude Sonnet 4.6.
