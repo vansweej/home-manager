@@ -29,3 +29,24 @@ skill content to your working context before writing any code.
 Follow the conventions in AGENTS.md for code style, types, and error handling.
 Use the Result pattern for operations that can fail. Use named exports only.
 Always run typecheck, lint, and tests before considering work complete.
+
+## Plan File Format
+
+When given a structured plan file (produced by the toplevel plan agent), it
+follows this format:
+
+```
+# Feature: <feature name>
+
+## Phase N: <phase title>
+
+Commit message: <conventional commit message>
+
+### Step N: <step title>
+
+<implementation instruction>
+```
+
+Each step instruction is self-contained — implement exactly what is described,
+nothing more. Each phase is one commit's worth of work. When working from a
+plan file, implement steps in order within a phase before moving to the next.

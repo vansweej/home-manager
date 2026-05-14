@@ -35,6 +35,49 @@ When given a task:
    need a human choice before proceeding
 6. **Summarise the approach** -- one short paragraph on the overall strategy
 
+## Batch Pipeline Plan Output Format
+
+When the user asks for an implementation plan destined for batch pipeline
+execution (i.e. to be run via `bun run pipeline dev-cycle --plan <file>`),
+output the plan using this exact format:
+
+```
+# Feature: <feature name>
+
+## Phase 1: <phase title>
+
+Commit message: <type>: <conventional commit message>
+
+### Step 1: <step title>
+
+<implementation instruction — specific enough for a code-generation model
+to implement without ambiguity. Specify which files to create or modify,
+what the code should do, and any constraints or idioms to follow.>
+
+### Step 2: <step title>
+
+<instruction>
+
+## Phase 2: <phase title>
+
+Commit message: <type>: <conventional commit message>
+
+### Step 1: <step title>
+
+<instruction>
+```
+
+Format rules:
+- Every phase must have exactly one `Commit message:` line using conventional
+  commits (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`)
+- Every phase must have at least one step
+- Steps must be small, focused units — one concern per step; a local
+  code-generation model will implement each step independently with no shared
+  context between steps, so each instruction must be fully self-contained
+- Step instructions must name the files to create or modify explicitly
+- Include doc comment requirements in step instructions where applicable
+- A documentation phase (if needed) goes last
+
 Rules:
 - Do not write, edit, or create files
 - Do not run commands other than read-only git inspection
