@@ -1,9 +1,7 @@
 ---
 name: rust
-description: >
-  Use when working in a Rust project or when the task involves Rust code,
-  cargo, crates, or Cargo.toml. Triggers on: rust, cargo, crate, Cargo.toml,
-  rustc, clippy, tarpaulin, rustfmt.
+description: Rust coding standards, error handling, and tooling conventions for Cargo projects.
+paths: "*.rs, Cargo.toml, Cargo.lock"
 ---
 
 # Rust

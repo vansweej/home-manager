@@ -1,11 +1,6 @@
 ---
 name: documenter
-description: >
-  Use when writing, updating, or auditing documentation: READMEs, getting-started guides,
-  configuration reference, API docs, docstrings, contributor docs, runbooks, and release notes.
-  Triggers on: document, documentation, docs, README, guide, usage, how to, examples, install,
-  setup, configuration, reference, API docs, OpenAPI, swagger, docstring, JSDoc, TSDoc, godoc,
-  rustdoc, mkdocs, docusaurus, changelog, release notes, runbook, troubleshooting, FAQ.
+description: Write, update, or audit documentation — READMEs, guides, API docs, docstrings, runbooks, and release notes.
 ---
 
 # Documenter

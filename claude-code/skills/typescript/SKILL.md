@@ -1,9 +1,7 @@
 ---
 name: typescript
-description: >
-  TypeScript and Bun conventions for this project: formatting (Biome),
-  naming, imports, type rules, error handling, and test structure.
-  Triggers on: typescript, ts, bun, biome, test, interface, type, Result.
+description: TypeScript and Bun conventions — formatting (Biome), naming, imports, type rules, error handling, and test structure.
+paths: "*.ts, *.tsx"
 ---
 
 # TypeScript

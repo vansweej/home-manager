@@ -1,9 +1,7 @@
 ---
 name: cpp
-description: >
-  Use when working in a C++ project or when the task involves C++ code,
-  CMake, or Make. Triggers on: c++, cpp, cmake, CMakeLists, clang, gcc,
-  ctest, conan, vcpkg, clang-tidy, clang-format.
+description: C++ coding standards, CMake conventions, and tooling for modern C++ projects.
+paths: "*.cpp, *.hpp, *.h, *.cc, *.cxx, CMakeLists.txt"
 ---
 
 # C++
