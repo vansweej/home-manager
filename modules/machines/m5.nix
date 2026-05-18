@@ -64,9 +64,17 @@ in
 {
   # M5 MacBook-specific configuration.
 
+  home.packages = with pkgs; [
+    awscli2
+  ];
+
   # Override the shared opencode.json symlink (deployed by opencode.nix) with a
   # static file that merges the Ollama provider onto the upstream config. All
   # other settings (model, compaction, permission) are inherited from ai-coding.
+  # NOTE: if ~/.config/opencode/opencode.json already exists as a plain file
+  # (e.g. written by OpenCode before the first home-manager switch), remove it
+  # before running home-manager switch:
+  #   rm ~/.config/opencode/opencode.json
   home.file.".config/opencode/opencode.json".source = lib.mkForce
     (pkgs.writeText "m5-opencode.json" m5OpencodeConfig);
 
