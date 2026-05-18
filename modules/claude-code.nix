@@ -13,8 +13,18 @@ let
       { source = claudeDir + "/agents/${name}"; }
   ) (lib.filterAttrs (n: t: t == "regular" && lib.hasSuffix ".md" n) agentFiles);
 
+  # ── Auto-discover skills ────────────────────────────────────────────────────
+  # Every subdirectory in claude-code/skills/ with a SKILL.md file is deployed.
+  # Adding a new skill: create claude-code/skills/<name>/SKILL.md, git add, switch.
+  skillDirs = builtins.readDir (claudeDir + "/skills");
+  skillEntries = lib.mapAttrs' (name: type:
+    lib.nameValuePair
+      ".claude/skills/${name}"
+      { source = claudeDir + "/skills/${name}"; }
+  ) (lib.filterAttrs (n: t: t == "directory") skillDirs);
+
 in
 {
   # ── Dotfiles ────────────────────────────────────────────────────────────────
-  home.file = agentEntries;
+  home.file = agentEntries // skillEntries;
 }
