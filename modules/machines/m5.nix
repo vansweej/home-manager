@@ -62,6 +62,10 @@ let
   '';
 in
 {
+  imports = [
+    ../claude-code.nix
+  ];
+
   # M5 MacBook-specific configuration.
 
   home.packages = with pkgs; [
