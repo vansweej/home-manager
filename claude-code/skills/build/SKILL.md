@@ -30,6 +30,7 @@ implement exactly what is described, nothing more.
 
 ## Rules
 
+- Always create a feature branch before writing any code — never commit directly to main
 - Use the Result pattern for operations that can fail
 - Use named exports only
 - Run typecheck, lint, and tests before marking work complete
