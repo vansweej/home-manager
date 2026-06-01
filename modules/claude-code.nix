@@ -3,15 +3,15 @@
 let
   claudeDir = ../claude-code;
 
-  # ── Auto-discover agents ────────────────────────────────────────────────────
-  # Every .md file in claude-code/agents/ is deployed as a nix-store copy.
-  # Adding a new agent: drop <name>.md in claude-code/agents/, git add, switch.
-  agentFiles = builtins.readDir (claudeDir + "/agents");
-  agentEntries = lib.mapAttrs' (name: _:
-    lib.nameValuePair
-      ".claude/agents/${name}"
-      { source = claudeDir + "/agents/${name}"; }
-  ) (lib.filterAttrs (n: t: t == "regular" && lib.hasSuffix ".md" n) agentFiles);
+  # Skills that are also exposed as spawnable subagents under ~/.claude/agents/.
+  # The agent file is sourced directly from the skill's SKILL.md — single source of truth.
+  # To promote a new skill to an agent, add its name here.
+  agentSkills = [ "brainstorm" "build" "debugger" "explore" "plan" "reviewer" "spar" "teach" "tester" ];
+
+  agentEntries = builtins.listToAttrs (map (name: {
+    name  = ".claude/agents/${name}.md";
+    value = { source = claudeDir + "/skills/${name}/SKILL.md"; };
+  }) agentSkills);
 
   # ── Auto-discover skills ────────────────────────────────────────────────────
   # Every subdirectory in claude-code/skills/ with a SKILL.md file is deployed.
