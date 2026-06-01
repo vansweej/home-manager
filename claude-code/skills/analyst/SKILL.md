@@ -1,9 +1,8 @@
 ---
 name: analyst
-description: >
-  Use when analyzing requirements, architecture, data, or existing code to
-  produce insights, summaries, tradeoffs, or recommendations. Triggers on:
-  analyze, understand, explain, investigate, research, assess, compare.
+description: Analyze requirements, architecture, data, or existing code to produce insights, summaries, tradeoffs, or recommendations.
+model: sonnet
+disallowedTools: Write, Edit
 ---
 
 # Analyst

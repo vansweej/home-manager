@@ -1,11 +1,8 @@
 ---
 name: architect
-description: >
-  Use when designing systems, planning new features, evaluating technical
-  approaches, producing Architecture Decision Records (ADRs), or assessing
-  the impact of structural changes. Triggers on: architect, design, plan,
-  structure, ADR, system design, technical approach, evaluate options,
-  scalability, dependencies, refactor strategy.
+description: Design systems, plan new features, evaluate technical approaches, produce ADRs, or assess the impact of structural changes.
+model: opus
+disallowedTools: Write, Edit
 ---
 
 # Architect

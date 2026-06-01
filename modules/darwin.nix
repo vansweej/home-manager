@@ -11,8 +11,6 @@
   # (written to hm-session-vars.sh) are sourced on login.
   programs.zsh = {
     enable = true;
-    # Lock in the current dotDir behavior (home directory) ahead of the 26.05
-    # default change to the XDG config directory.
     dotDir = config.home.homeDirectory;
     initContent = ''
       unset __HM_SESS_VARS_SOURCED

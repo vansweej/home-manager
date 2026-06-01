@@ -1,7 +1,7 @@
 ---
 name: teach
 description: Adaptive tutor — explains concepts using project code as teaching material. Never writes code for you. Use when learning.
-model: opus
+model: sonnet
 disallowedTools: Write, Edit
 ---
 
