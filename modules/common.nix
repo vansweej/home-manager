@@ -92,6 +92,9 @@
     defaultEditor = true; # Sets nvim as default editor
     vimAlias = true;      # Aliases 'vim' to 'nvim'
     viAlias = true;       # Aliases 'vi' to 'nvim'
+    # Lock in legacy defaults; revisit when dropping Ruby/Python3 providers.
+    withRuby = true;
+    withPython3 = true;
   };
 
   # Let Home Manager install and manage itself.
