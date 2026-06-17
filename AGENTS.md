@@ -17,6 +17,7 @@ machines/
 modules/
   common.nix                       # Universal: programs, fonts, nvim symlinks, bootstrapNvim
   opencode.nix                     # OpenCode: auto-discovery, activation, session vars
+  athenaeum.nix                    # Declares programs.athenaeum.opencodeOverlay: athenaeum-mcp registration + agent scoping
   linux.nix                        # Linux-only: nixGL wrapper (opt-in), .desktop file
   darwin.nix                       # macOS-only: placeholder for Darwin-specific config
   machines/

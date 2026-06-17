@@ -117,6 +117,35 @@ install leaves no stamp and is retried on the next switch.
 
 ---
 
+## `modules/athenaeum.nix` — athenaeum-mcp server overlay
+
+Imported by **oryp6, M5, M1** (but not parallels or parallels-ubuntu). Does not write any
+files — it is a data-only module that declares and assigns the
+`programs.athenaeum.opencodeOverlay` option, which machine modules consume.
+
+### What the overlay contains
+
+| Key | Value | Description |
+|---|---|---|
+| `mcp.athenaeum` | MCP server block | Registers the `athenaeum-mcp-server` as a `type: "local"` server launched via `nix develop … cargo run -p athenaeum-mcp-server` with `cwd` pinned to the repo root (so the relative `./data/athenaeum` db_path resolves correctly) |
+| `tools."athenaeum*"` | `false` | Disables the server's tools globally |
+| `agent.brainstorm.tools."athenaeum*"` | `true` | Enables for brainstorm |
+| `agent.spar.tools."athenaeum*"` | `true` | Enables for spar |
+| `agent.teach.tools."athenaeum*"` | `true` | Enables for teach |
+| `agent.plan.tools."athenaeum*"` | `true` | Enables for plan |
+
+The server's `command` array resolves the repo path from `config.home.homeDirectory`
+so it works on both Linux (`/home/vansweej`) and macOS (`/Users/janvansweevelt`).
+
+### Design invariant
+
+This module does **not** set `home.file` for `opencode.json`. Each consuming
+machine performs exactly one `lib.recursiveUpdate` + one `lib.mkForce` write,
+which allows M5 to fold the athenaeum overlay into the **same merge** as its
+existing Ollama provider without a conflicting second definition.
+
+---
+
 ## `modules/linux.nix` — Linux only
 
 Applied to all Linux machines (`x86_64-linux` and `aarch64-linux`).
@@ -155,6 +184,10 @@ Do **not** add machine-specific config here — that belongs in
 
 Applied only to the `oryp6` profile (`x86_64-linux`, username `vansweej`).
 
+Overrides `opencode.json` by merging the athenaeum-mcp overlay from
+`modules/athenaeum.nix` onto the upstream ai-coding config via
+`lib.recursiveUpdate` + `lib.mkForce`.
+
 ### Packages
 
 | Package | Purpose |
@@ -181,7 +214,10 @@ Applied only to the `oryp6` profile (`x86_64-linux`, username `vansweej`).
 
 Applied only to the `M1` profile (`aarch64-darwin`, username `janvansweevelt`).
 
-Currently a placeholder. Add M1-specific packages and settings here as needed.
+Overrides `opencode.json` by merging the athenaeum-mcp overlay from
+`modules/athenaeum.nix` onto the upstream ai-coding config via
+`lib.recursiveUpdate` + `lib.mkForce`. M1 currently has no other
+machine-specific packages or services.
 
 ---
 
@@ -189,18 +225,19 @@ Currently a placeholder. Add M1-specific packages and settings here as needed.
 
 Applied only to the `M5` profile (`aarch64-darwin`, username `janvansweevelt`).
 
-Overrides two shared defaults with M5-specific values:
+Overrides three shared defaults with M5-specific values:
 
 - **`opencode.json`** — reads the upstream config from the `aiCodingPkg` Nix
-  store path via `builtins.fromJSON`, then uses `lib.recursiveUpdate` to inject
-  only the Ollama provider (`gemma4:26b`). All other settings — model,
-  compaction, and permissions — are inherited from `ai-coding/opencode.json`
-  unchanged. This prevents the permission block from drifting out of sync with
-  other machines.
+  store path via `builtins.fromJSON`, then uses nested `lib.recursiveUpdate` to
+  inject **both** the Ollama provider (`gemma4:26b`) and the athenaeum-mcp
+  overlay from `modules/athenaeum.nix` in a single merge. The two overlays touch
+  disjoint top-level keys (`provider.*` vs `mcp.*` / `tools.*` / `agent.*`), so
+  there is no collision. All other settings — model, compaction, and permissions
+  — are inherited from `ai-coding/opencode.json` unchanged.
 
   > **`lib.recursiveUpdate` note:** merges attrsets deeply but replaces lists
-  > wholesale. The current schema has no lists under `provider`, so there is no
-  > collision risk. If that changes, revisit the merge strategy.
+  > wholesale. The current schema has no lists at overlapping keys, so there is
+  > no collision risk. If that changes, revisit the merge strategy.
 
 - **`local.md` agent** — replaces the shared local agent with an M5-specific
   version whose frontmatter sets `model: ollama/gemma4:26b`.
@@ -224,5 +261,6 @@ setup on `aarch64-linux` before promoting changes to M5 and oryp6.
 | OpenCode agents, skills, commands, tools | `opencode/<category>/` + `git add` (auto-discovered) |
 | Applies to all Linux machines | `modules/linux.nix` |
 | Applies to all macOS machines | `modules/darwin.nix` |
+| Applies to a subset of machines (e.g. oryp6, M5, M1) | Shared module (e.g. `modules/athenaeum.nix`) + imported by each machine's `modules/machines/<name>.nix` |
 | Applies to one specific machine | `modules/machines/<name>.nix` |
 | Machine identity (username, homeDir) | `machines/<name>.nix` (metadata, not a module) |

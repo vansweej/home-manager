@@ -154,22 +154,30 @@ $AI_CODING_MONOREPO`). They do not import code from ai-coding.
 
 `opencode.json` is the single source of truth for base OpenCode permissions. It
 lives in the `ai-coding` repo and flows through the Nix build into each machine.
-M5 is the only machine that overrides it — injecting only the Ollama provider via
-`lib.recursiveUpdate` so permissions are always inherited from upstream.
+Three machines (oryp6, M5, M1) now override it — registering the athenaeum-mcp
+server via the shared `modules/athenaeum.nix` overlay, with permissions always
+inherited from upstream. M5 additionally folds its Ollama provider into the same
+merge. Parallels (and parallels-ubuntu) inherits the upstream file unchanged.
 
 ```mermaid
 graph LR
     AIC["ai-coding/opencode.json<br/>source of truth<br/>model · compaction · permissions"]
     NS["Nix store<br/>aiCodingPkg"]
     ON["opencode.nix<br/>home.file source"]
+    AE["modules/athenaeum.nix<br/>programs.athenaeum.opencodeOverlay<br/>mcp + agent scoping"]
 
     AIC -->|nix build| NS
     NS -->|builtins.readFile\nbuiltins.fromJSON| ON
 
-    ON -->|inherits as-is| M1["M1"]
-    ON -->|inherits as-is| OR["oryp6"]
-    ON -->|inherits as-is| PA["parallels\nparallels-ubuntu"]
-    ON -->|"lib.recursiveUpdate\n+ Ollama provider only"| M5["M5"]
+    ON -->|"lib.mkForce\n+ athenaeum overlay"| OR["oryp6"]
+    ON -->|"lib.mkForce\n+ athenaeum overlay"| M1["M1"]
+    ON -->|"lib.mkForce\n+ Ollama provider<br/>+ athenaeum overlay"| M5["M5"]
+    ON -->|"inherits as-is"| PP["parallels"]
+    ON -->|"inherits as-is"| PU["parallels-ubuntu"]
+
+    AE -.->|config.programs.*| OR
+    AE -.->|config.programs.*| M1
+    AE -.->|config.programs.*| M5
 ```
 
 To update permissions for all machines: edit `opencode.json` in `ai-coding`,
