@@ -45,5 +45,5 @@ maintainable code.
 
 ## Language-Specific Rules
 
-For Rust projects, load the `rust` skill. For C++ projects, load the `cpp` skill.
-These provide language-specific coding standards, tooling, and coverage rules.
+Load the matching language skill for language-specific coding standards, tooling,
+and coverage rules: `rust`, `cpp`, `haskell`, `julia`, `python`, or `go`.

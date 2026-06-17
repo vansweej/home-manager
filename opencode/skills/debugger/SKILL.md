@@ -58,5 +58,5 @@ Other places in the codebase that may have the same problem.
 
 ## Language-Specific Rules
 
-For Rust projects, load the `rust` skill. For C++ projects, load the `cpp` skill.
-These provide language-specific debugging conventions and tooling.
+Load the matching language skill for its language-specific debugging conventions
+and tooling: `rust`, `cpp`, `haskell`, `julia`, `python`, or `go`.

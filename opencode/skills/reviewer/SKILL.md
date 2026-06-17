@@ -46,5 +46,5 @@ Style, minor improvements, optional refactors.
 
 ## Language-Specific Rules
 
-For Rust projects, load the `rust` skill. For C++ projects, load the `cpp` skill.
-These provide language-specific review checklists.
+Load the matching language skill for its language-specific review checklist:
+`rust`, `cpp`, `haskell`, `julia`, `python`, or `go`.

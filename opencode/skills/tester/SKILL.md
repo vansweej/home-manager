@@ -54,5 +54,5 @@ Invalid inputs, failures, exceptions, timeouts.
 
 ## Language-Specific Rules
 
-For Rust projects, load the `rust` skill. For C++ projects, load the `cpp` skill.
-These provide language-specific testing conventions and coverage targets.
+Load the matching language skill for its language-specific testing conventions
+and coverage targets: `rust`, `cpp`, `haskell`, `julia`, `python`, or `go`.
