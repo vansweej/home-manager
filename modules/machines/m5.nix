@@ -1,35 +1,44 @@
 { pkgs, lib, config, inputs, meta, ... }:
 let
   # Read the upstream opencode.json from the pinned ai-coding Nix store path and
-  # overlay only the M5-specific provider block onto it. All other settings —
-  # model, compaction, permission — are inherited from the upstream file so they
-  # can never drift out of sync with the other machines.
+  # overlay both the M5-specific provider block and the athenaeum-mcp server
+  # registration onto it. All other settings — model, compaction, permission —
+  # are inherited from the upstream file so they can never drift out of sync with
+  # the other machines.
   #
-  # lib.recursiveUpdate merges attrsets deeply. It replaces lists wholesale, not
-  # element-by-element. The current schema has no lists under `provider`, so there
-  # is no collision risk. If that changes, revisit this merge strategy.
+  # Merge order: upstream base ← Ollama provider ← athenaeum overlay. The two
+  # overlays touch disjoint top-level keys (provider.* vs mcp.* / tools.* /
+  # agent.*), so there is no collision. This stays a single merge feeding the
+  # single lib.mkForce write below — adding a second opencode.json definition
+  # would conflict with that mkForce.
+  #
+  # lib.recursiveUpdate merges attrsets deeply but replaces lists wholesale. The
+  # current schema has no lists at overlapping keys under provider / mcp / tools
+  # / agent, so there is no collision risk. If that changes, revisit.
   aiCodingPkg = inputs.ai-coding.packages.${meta.system}.default;
   baseConfig = builtins.fromJSON (builtins.readFile "${aiCodingPkg}/opencode.json");
-  m5OpencodeConfig = builtins.toJSON (lib.recursiveUpdate baseConfig {
-    provider = {
-      ollama = {
-        npm = "@ai-sdk/openai-compatible";
-        name = "Ollama (local)";
-        options = {
-          baseURL = "http://localhost:11434/v1";
-        };
-        models = {
-          "gemma4:26b" = {
-            name = "Gemma 4 26B (local)";
-            limit = {
-              context = 32768;
-              output = 8192;
+  m5OpencodeConfig = builtins.toJSON (lib.recursiveUpdate
+    (lib.recursiveUpdate baseConfig {
+      provider = {
+        ollama = {
+          npm = "@ai-sdk/openai-compatible";
+          name = "Ollama (local)";
+          options = {
+            baseURL = "http://localhost:11434/v1";
+          };
+          models = {
+            "gemma4:26b" = {
+              name = "Gemma 4 26B (local)";
+              limit = {
+                context = 32768;
+                output = 8192;
+              };
             };
           };
         };
       };
-    };
-  });
+    })
+    config.programs.athenaeum.opencodeOverlay);
 
   # M5-specific local agent.
   # Mirrors opencode/agents/local.md exactly, with model and description
@@ -64,6 +73,7 @@ in
 {
   imports = [
     ../claude-code.nix
+    ../athenaeum.nix
   ];
 
   # M5 MacBook-specific configuration.
