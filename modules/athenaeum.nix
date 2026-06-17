@@ -59,6 +59,7 @@ in
       spar = { tools = { "athenaeum*" = true; }; };
       teach = { tools = { "athenaeum*" = true; }; };
       plan = { tools = { "athenaeum*" = true; }; };
+      explore = { tools = { "athenaeum*" = true; }; };
     };
   };
 }
