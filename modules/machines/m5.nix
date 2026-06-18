@@ -98,4 +98,13 @@ in
   # cannot be overridden from opencode.json alone.
   home.file.".config/opencode/agents/local.md".source = lib.mkForce
     (pkgs.writeText "m5-local-agent.md" m5LocalAgent);
+
+  # Create the mutable athenaeum data dir (cwd for the MCP server) before any
+  # file writes. The path comes from the athenaeum.nix option so it stays in sync
+  # with the server's cwd. The old store under ~/Projects/athenaeum-mcp is NOT
+  # migrated — re-ingest after switching.
+  home.activation.createAthenaeumDataDir =
+    lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      run mkdir -p "${config.programs.athenaeum.dataDir}/data"
+    '';
 }
