@@ -1,4 +1,4 @@
-{ config, lib, inputs, meta, ... }:
+{ config, lib, pkgs, inputs, meta, ... }:
 
 let
   # Store-built athenaeum-mcp binary, consumed as a flake input (mirrors the
@@ -12,6 +12,17 @@ let
   # Uses config.home.homeDirectory (not a hardcoded path) because it differs per
   # machine: /home/vansweej on oryp6 vs /Users/janvansweevelt on the Macs.
   dataDir = "${config.home.homeDirectory}/.local/share/athenaeum";
+
+  # Expose ONLY the bulk-ingest CLI on PATH. The server binary is intentionally
+  # left off PATH — OpenCode launches it via the absolute store path in the MCP
+  # registration below. athenaeumPkg ships both binaries, so symlink just the one
+  # we want. The upstream wrapProgram wrapper references the real binary by
+  # absolute store path, so symlinking the wrapper preserves the pdfium loader
+  # path injection (DYLD_/LD_LIBRARY_PATH) — no re-wrapping needed.
+  athenaeumIngest = pkgs.runCommand "athenaeum-ingest" { } ''
+    mkdir -p $out/bin
+    ln -s ${athenaeumPkg}/bin/athenaeum-ingest $out/bin/athenaeum-ingest
+  '';
 in
 {
   # Read-only option carrying the opencode.json overlay. Machine modules read
@@ -42,6 +53,10 @@ in
   };
 
   config.programs.athenaeum.dataDir = dataDir;
+
+  # Only the ingest CLI lands on PATH; the MCP server is wired into OpenCode via
+  # the absolute store path in opencodeOverlay below, so it is deliberately omitted.
+  config.home.packages = [ athenaeumIngest ];
 
   config.programs.athenaeum.opencodeOverlay = {
     # MCP server registration. command is the store-built binary instead of
