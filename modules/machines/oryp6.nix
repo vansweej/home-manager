@@ -24,6 +24,15 @@ in
   home.file.".config/opencode/opencode.json".source = lib.mkForce
     (pkgs.writeText "oryp6-opencode.json" oryp6OpencodeConfig);
 
+  # Create the mutable athenaeum data dir (cwd for the MCP server) before any
+  # file writes. The path comes from the athenaeum.nix option so it stays in sync
+  # with the server's cwd. The old store under ~/Projects/athenaeum-mcp is NOT
+  # migrated — re-ingest after switching.
+  home.activation.createAthenaeumDataDir =
+    lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      run mkdir -p "${config.programs.athenaeum.dataDir}/data"
+    '';
+
   # oryp6-specific packages: rootless Docker runtime and its dependencies.
   home.packages = with pkgs; [
     docker
