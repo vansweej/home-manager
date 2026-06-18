@@ -17,7 +17,8 @@ machines/
 modules/
   common.nix                       # Universal: programs, fonts, nvim symlinks, bootstrapNvim
   opencode.nix                     # OpenCode: auto-discovery, activation, session vars
-   athenaeum.nix                    # Resolves store-built athenaeum-mcp binary; exposes dataDir option; registers MCP server + agent scoping
+  athenaeum.nix                    # Resolves store-built athenaeum-mcp binary; exposes dataDir option; registers MCP server + agent scoping
+  sccache.nix                      # Local-only sccache compiler cache: RUSTC_WRAPPER + CARGO_INCREMENTAL=0
   linux.nix                        # Linux-only: nixGL wrapper (opt-in), .desktop file
   darwin.nix                       # macOS-only: placeholder for Darwin-specific config
   machines/
@@ -59,6 +60,14 @@ modules/machines/<name>.nix   (that machine only)
 agents, skills, commands, tools, session variables, and activation scripts.
 It uses `builtins.readDir` to auto-discover files from the `opencode/` directory —
 no manual `home.file` entries are needed when adding new agents, skills, or tools.
+
+`sccache.nix` is also imported by `common.nix`. It installs `sccache` and sets
+two session variables — `RUSTC_WRAPPER` (routes every `cargo build`, including
+inside `nix develop` shells, through a local on-disk cache) and
+`CARGO_INCREMENTAL=0` (so debug builds are cacheable, since sccache cannot cache
+incremental compilation). Storage is local-disk only; no cloud backend is
+configured. C/C++ launcher integration (`CMAKE_*_COMPILER_LAUNCHER`, autotools
+`CC`/`CXX`) and future CUDA `nvcc` caching are left to per-project configuration.
 
 Machine identity (`home.username`, `home.homeDirectory`, `home.stateVersion`) is
 injected by the `mkHome` helper in `flake.nix` from the machine metadata file —
@@ -240,6 +249,7 @@ home.packages = with pkgs; [
 | `bat` | Program (`programs.bat`) | `modules/common.nix` | Enabled with defaults |
 | `git` | Program (`programs.git`) | `modules/common.nix` | User: Jan Van Sweevelt / vansweej@gmail.com |
 | `systemd docker service` | `systemd.user.services` | `modules/machines/oryp6.nix` | Rootless Docker daemon; oryp6 only |
+| `sccache` | Package + env (`RUSTC_WRAPPER`, `CARGO_INCREMENTAL`) | `modules/sccache.nix` | Local-only Rust/C++ compiler cache; all machines |
 
 ---
 

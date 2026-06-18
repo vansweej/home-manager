@@ -3,6 +3,7 @@
   imports = [
     ./opencode.nix
     ./grammars.nix
+    ./sccache.nix
   ];
 
   fonts.fontconfig.enable = true;
