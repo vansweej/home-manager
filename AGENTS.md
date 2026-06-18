@@ -17,7 +17,7 @@ machines/
 modules/
   common.nix                       # Universal: programs, fonts, nvim symlinks, bootstrapNvim
   opencode.nix                     # OpenCode: auto-discovery, activation, session vars
-  athenaeum.nix                    # Declares programs.athenaeum.opencodeOverlay: athenaeum-mcp registration + agent scoping
+   athenaeum.nix                    # Resolves store-built athenaeum-mcp binary; exposes dataDir option; registers MCP server + agent scoping
   linux.nix                        # Linux-only: nixGL wrapper (opt-in), .desktop file
   darwin.nix                       # macOS-only: placeholder for Darwin-specific config
   machines/
@@ -251,12 +251,19 @@ home.packages = with pkgs; [
 | `home-manager` | `github:nix-community/home-manager` | Follows the same `nixpkgs` |
 | `nixgl` | `github:guibou/nixGL` | Overlay applied on Linux only; never on Darwin |
 | `ai-coding` | `github:vansweej/ai-coding` | Two-phase Nix derivation; `node_modules` baked in; pinned in `flake.lock` |
+| `athenaeum` | `github:vansweej/athenaeum-mcp` | Built by Nix into a store binary (mirrors `ai-coding`); `inputs.nixpkgs.follows = "nixpkgs"`; updated via `nix flake update athenaeum` |
 
 The `nixgl.overlay` is conditionally applied in `mkHome` based on `isDarwin`,
 making `pkgs.nixgl.*` available only on Linux builds.
 
 The `ai-coding` input is updated with `nix flake update ai-coding`. Always commit
 `flake.lock` after updating and run `home-manager switch` to apply.
+
+The `athenaeum` input is updated with `nix flake update athenaeum`. The store-built
+binary is launched with `cwd` set to `~/.local/share/athenaeum` (created by per-machine
+`home.activation` scripts), so the server's relative `db_path` (`./data/athenaeum`)
+resolves to a writable location outside the Nix store. Existing ingested data is not
+migrated on switch — re-ingest after deploying.
 
 ---
 
