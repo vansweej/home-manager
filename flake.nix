@@ -12,6 +12,10 @@
       url = "github:vansweej/ai-coding";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    athenaeum = {
+      url = "github:vansweej/athenaeum-mcp";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
