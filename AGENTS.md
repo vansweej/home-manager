@@ -265,6 +265,24 @@ binary is launched with `cwd` set to `~/.local/share/athenaeum` (created by per-
 resolves to a writable location outside the Nix store. Existing ingested data is not
 migrated on switch — re-ingest after deploying.
 
+### Running bulk ingest
+
+The `athenaeum-ingest` CLI is on `$PATH` (only this binary; the MCP server is not).
+Both the CLI and the server resolve a relative `db_path` (`./data/athenaeum`)
+against the current working directory, so the CLI must be run from the data dir to
+write into the same database the MCP server reads:
+
+```bash
+cd ~/.local/share/athenaeum
+athenaeum-ingest <directory> --recursive --verbose
+```
+
+`<directory>` is a folder of PDF/EPUB files. Omit `--recursive` to ingest only the
+top level. The server picks up newly ingested content on its next `athenaeum_search`
+(no restart needed). Existing data is not migrated on `home-manager switch` — re-run
+this command to repopulate after a fresh deploy. Requires Ollama running at
+`localhost:11434` with `nomic-embed-text`.
+
 ---
 
 ## OpenCode Skills
