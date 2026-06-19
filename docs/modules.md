@@ -160,6 +160,9 @@ existing Ollama provider without a conflicting second definition.
 per-machine (systemd on oryp6, launchd on M1/M5), each pinning its working directory
 to `dataDir` as a second cwd guarantee.
 
+For operational checks (verifying the unit is running, reading logs, the smoke test,
+and troubleshooting), see the [corpus watcher runbook](athenaeum-watcher.md).
+
 ---
 
 ## `modules/linux.nix` — Linux only

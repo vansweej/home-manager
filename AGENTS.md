@@ -328,6 +328,8 @@ short-lived `athenaeum-ingest` CLI. Athenaeum itself is never a daemon.
   on macOS (logs to `~/.local/share/athenaeum/watch.log` and `watch.err.log`).
 - **Requires** Ollama at `localhost:11434` with `nomic-embed-text`, same as manual
   ingest.
+- **Runbook:** operational health checks, log locations, the smoke test, and
+  troubleshooting are in [`docs/athenaeum-watcher.md`](docs/athenaeum-watcher.md).
 
 ---
 

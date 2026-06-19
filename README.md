@@ -171,3 +171,4 @@ See `README-install.md` inside the tarball for full details.
 - [Architecture](docs/architecture.md) — module layers, flake design, `mkHome` helper
 - [Adding a machine](docs/adding-a-machine.md) — step-by-step guide
 - [What each module manages](docs/modules.md) — reference for `common`, `linux`, `darwin`, and machine modules
+- [Athenaeum watcher runbook](docs/athenaeum-watcher.md) — health checks, logs, smoke test, and troubleshooting for the corpus watcher
