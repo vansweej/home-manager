@@ -127,15 +127,17 @@ files — it is a data-only module that declares and assigns the
 
 | Key | Value | Description |
 |---|---|---|
-| `mcp.athenaeum` | MCP server block | Registers the `athenaeum-mcp-server` as a `type: "local"` server launched via `nix develop … cargo run -p athenaeum-mcp-server` with `cwd` pinned to the repo root (so the relative `./data/athenaeum` db_path resolves correctly) |
+| `mcp.athenaeum` | MCP server block | Registers the store-built `athenaeum-mcp-server` binary (from the `athenaeum` flake input) as a `type: "local"` server, with `cwd` pinned to the data dir (`~/.local/share/athenaeum`) so the relative `./data/athenaeum` db_path resolves to a writable store outside the Nix store. |
 | `tools."athenaeum*"` | `false` | Disables the server's tools globally |
 | `agent.brainstorm.tools."athenaeum*"` | `true` | Enables for brainstorm |
 | `agent.spar.tools."athenaeum*"` | `true` | Enables for spar |
 | `agent.teach.tools."athenaeum*"` | `true` | Enables for teach |
 | `agent.plan.tools."athenaeum*"` | `true` | Enables for plan |
 
-The server's `command` array resolves the repo path from `config.home.homeDirectory`
-so it works on both Linux (`/home/vansweej`) and macOS (`/Users/janvansweevelt`).
+The server's `command` is the absolute store path of the store-built binary
+(`${athenaeumPkg}/bin/athenaeum-mcp-server`). The `cwd` field resolves from
+`config.home.homeDirectory` via `dataDir` so the relative `./data/athenaeum`
+db_path works on both Linux (`/home/vansweej`) and macOS (`/Users/janvansweevelt`).
 
 ### Design invariant
 
