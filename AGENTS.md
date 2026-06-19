@@ -250,6 +250,8 @@ home.packages = with pkgs; [
 | `git` | Program (`programs.git`) | `modules/common.nix` | User: Jan Van Sweevelt / vansweej@gmail.com |
 | `systemd docker service` | `systemd.user.services` | `modules/machines/oryp6.nix` | Rootless Docker daemon; oryp6 only |
 | `sccache` | Package + env (`RUSTC_WRAPPER`, `CARGO_INCREMENTAL`) | `modules/sccache.nix` | Local-only Rust/C++ compiler cache; all machines |
+| `watchexec` | Package | `modules/athenaeum.nix` | Cross-platform file watcher; drives the corpus reingest; oryp6 + M1 + M5 |
+| `athenaeum-watch` | `systemd.user.services` (Linux) / `launchd.agents` (Darwin) | `modules/machines/{oryp6,m1,m5}.nix` | Watches `~/Documents/corpus`; runs `athenaeum-ingest` on change |
 
 ---
 
@@ -292,6 +294,40 @@ top level. The server picks up newly ingested content on its next `athenaeum_sea
 (no restart needed). Existing data is not migrated on `home-manager switch` — re-run
 this command to repopulate after a fresh deploy. Requires Ollama running at
 `localhost:11434` with `nomic-embed-text`.
+
+### Corpus directory watcher
+
+A long-running watcher reingests the corpus automatically when files change.
+`watchexec` is the only resident process; on each debounced change it invokes the
+short-lived `athenaeum-ingest` CLI. Athenaeum itself is never a daemon.
+
+- **Watched directory:** `~/Documents/corpus` (option `programs.athenaeum.watchDir`,
+  default in `modules/athenaeum.nix`). Deliberately non-hidden so it is reachable
+  from file-manager tools and the PDFs/EPUBs can be browsed directly. Separate from
+  the LanceDB store under `~/.local/share/athenaeum/data`.
+- **Trigger semantics:** any change triggers a *full recursive* reingest of the
+  whole directory. Safe because `athenaeum-ingest` upserts per file (delete-then-add
+  keyed on the canonical absolute path), so re-ingesting does not duplicate rows.
+  Deleting a file does **not** remove its embeddings — there is no prune path yet.
+- **Relative db_path:** the CLI's `db_path` is the relative `./data/athenaeum`, so
+  it resolves against the working directory. The watcher pins cwd to
+  `~/.local/share/athenaeum` in **two** ways — `watchexec --workdir` (the ingest
+  subprocess) and the unit's working directory (`WorkingDirectory=` on Linux,
+  `WorkingDirectory` key on macOS) — so it always writes the same store the MCP
+  server reads. It must **not** be run from the corpus dir, or a stray DB would be
+  created there.
+- **No startup reingest:** runs with `--postpone`, so it does **not** reingest at
+  boot or on `home-manager switch` — only on a genuine post-startup change. To
+  ingest files added while the watcher was stopped, run the CLI manually:
+  ```bash
+  cd ~/.local/share/athenaeum
+  athenaeum-ingest ~/Documents/corpus --recursive --verbose
+  ```
+- **Per-OS unit:** `systemd.user.services.athenaeum-watch` on Linux (logs to the
+  journal: `journalctl --user -u athenaeum-watch`); `launchd.agents.athenaeum-watch`
+  on macOS (logs to `~/.local/share/athenaeum/watch.log` and `watch.err.log`).
+- **Requires** Ollama at `localhost:11434` with `nomic-embed-text`, same as manual
+  ingest.
 
 ---
 

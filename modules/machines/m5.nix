@@ -106,5 +106,28 @@ in
   home.activation.createAthenaeumDataDir =
     lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       run mkdir -p "${config.programs.athenaeum.dataDir}/data"
+      run mkdir -p "${config.programs.athenaeum.watchDir}"
     '';
+
+  # Long-running corpus watcher (macOS). launchd keeps watchexec resident; it
+  # invokes the short-lived athenaeum-ingest CLI on each debounced change.
+  # ProgramArguments wraps watchCommand in `sh -lc` because launchd needs a list
+  # and watchCommand is one string; -l (login shell) yields a sane PATH.
+  # WorkingDirectory = dataDir is a second cwd guarantee on top of watchexec
+  # --workdir, ensuring the CLI's relative db_path (./data/athenaeum) resolves to
+  # the shared store rather than a stray DB in the corpus. RunAtLoad + KeepAlive
+  # keep it running and relaunch on exit. launchd has no journal, so stdout/stderr
+  # go to log files under dataDir — kept out of watchDir so log writes cannot
+  # trigger the watcher.
+  launchd.agents.athenaeum-watch = {
+    enable = true;
+    config = {
+      ProgramArguments = [ "/bin/sh" "-lc" config.programs.athenaeum.watchCommand ];
+      WorkingDirectory = config.programs.athenaeum.dataDir;
+      RunAtLoad = true;
+      KeepAlive = true;
+      StandardOutPath = "${config.programs.athenaeum.dataDir}/watch.log";
+      StandardErrorPath = "${config.programs.athenaeum.dataDir}/watch.err.log";
+    };
+  };
 }

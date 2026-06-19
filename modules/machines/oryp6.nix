@@ -31,6 +31,7 @@ in
   home.activation.createAthenaeumDataDir =
     lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       run mkdir -p "${config.programs.athenaeum.dataDir}/data"
+      run mkdir -p "${config.programs.athenaeum.watchDir}"
     '';
 
   # oryp6-specific packages: rootless Docker runtime and its dependencies.
@@ -60,6 +61,31 @@ in
       ];
       Restart = "on-failure";
       TimeoutStartSec = 0;
+    };
+    Install = {
+      WantedBy = [ "default.target" ];
+    };
+  };
+
+  # Long-running corpus watcher. watchexec is the only resident process; it invokes
+  # the short-lived athenaeum-ingest CLI on each debounced change. WorkingDirectory
+  # is dataDir (NOT watchDir) as a second cwd guarantee on top of watchexec
+  # --workdir, so the CLI's relative db_path (./data/athenaeum) resolves to the
+  # shared store. Pointing cwd at watchDir would create a stray DB inside the
+  # corpus. ExecStart is a plain argv string — systemd splits it on whitespace and
+  # runs it without a shell. Restart = "always" mirrors macOS launchd KeepAlive;
+  # systemd's default start-limit (5/10s) guards a crash-loop. Output goes to the
+  # systemd journal (journalctl --user -u athenaeum-watch).
+  systemd.user.services.athenaeum-watch = {
+    Unit = {
+      Description = "Athenaeum corpus watcher (reingest on PDF/EPUB change)";
+      After = [ "default.target" ];
+    };
+    Service = {
+      Type = "simple";
+      ExecStart = config.programs.athenaeum.watchCommand;
+      WorkingDirectory = config.programs.athenaeum.dataDir;
+      Restart = "always";
     };
     Install = {
       WantedBy = [ "default.target" ];

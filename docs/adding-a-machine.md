@@ -63,6 +63,10 @@ add machine-specific packages and services as needed.
   #
   # On macOS only — add launchd agents here, never in common.nix or linux.nix:
   # launchd.agents.my-agent = { ... };
+  #
+  # A working example of a machine-scoped launchd agent is
+  # launchd.agents.athenaeum-watch in modules/machines/m5.nix — copy that pattern
+  # for new Darwin machine modules.
 }
 ```
 

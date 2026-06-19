@@ -144,6 +144,20 @@ machine performs exactly one `lib.recursiveUpdate` + one `lib.mkForce` write,
 which allows M5 to fold the athenaeum overlay into the **same merge** as its
 existing Ollama provider without a conflicting second definition.
 
+### Corpus watcher options
+
+| Option | Type | Description |
+|---|---|---|
+| `programs.athenaeum.watchDir` | str (default `~/Documents/corpus`) | Non-hidden corpus directory watched for PDF/EPUB changes |
+| `programs.athenaeum.watchCommand` | str (read-only) | Resolved `watchexec` command; consumed by per-machine service units |
+
+`watchCommand` runs `watchexec` with `--watch <watchDir>`, `--workdir <dataDir>`
+(so the CLI's relative `./data/athenaeum` db_path resolves to the shared store),
+`--postpone` (no reingest at startup), `--debounce 5s`, and `--on-busy-update queue`.
+`watchexec` is added to `home.packages` here. The actual service unit is registered
+per-machine (systemd on oryp6, launchd on M1/M5), each pinning its working directory
+to `dataDir` as a second cwd guarantee.
+
 ---
 
 ## `modules/linux.nix` — Linux only
@@ -173,7 +187,10 @@ don't need it (e.g. `parallels-ubuntu`) set no `nixGL` field and get neither.
 Applied to all `aarch64-darwin` machines.
 
 Currently a placeholder. Add macOS-wide config here when it emerges — for example,
-`launchd` agents, macOS defaults (`defaults write`), or Homebrew integration.
+macOS defaults (`defaults write`), or Homebrew integration.
+A concrete `launchd.agents` example (the athenaeum corpus watcher) now exists in
+`modules/machines/m1.nix` and `modules/machines/m5.nix` — machine-specific agents
+belong in the machine module, not here.
 
 Do **not** add machine-specific config here — that belongs in
 `modules/machines/<name>.nix`.
@@ -207,6 +224,7 @@ Overrides `opencode.json` by merging the athenaeum-mcp overlay from
 | Service | Type | Notes |
 |---|---|---|
 | `docker` | `systemd.user.services` | Runs `dockerd-rootless`; starts on `default.target` |
+| `athenaeum-watch` | `systemd.user.services` | Runs `watchexec`; reingests `~/Documents/corpus` on change; `Restart = "always"` |
 
 ---
 
@@ -216,8 +234,8 @@ Applied only to the `M1` profile (`aarch64-darwin`, username `janvansweevelt`).
 
 Overrides `opencode.json` by merging the athenaeum-mcp overlay from
 `modules/athenaeum.nix` onto the upstream ai-coding config via
-`lib.recursiveUpdate` + `lib.mkForce`. M1 currently has no other
-machine-specific packages or services.
+`lib.recursiveUpdate` + `lib.mkForce`. Registers `launchd.agents.athenaeum-watch`
+(the corpus watcher). Otherwise has no machine-specific packages.
 
 ---
 
@@ -241,6 +259,8 @@ Overrides three shared defaults with M5-specific values:
 
 - **`local.md` agent** — replaces the shared local agent with an M5-specific
   version whose frontmatter sets `model: ollama/gemma4:26b`.
+- **`launchd.agents.athenaeum-watch`** — registers the corpus watcher (logs to
+  `~/.local/share/athenaeum/watch.log`).
 
 ---
 

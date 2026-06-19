@@ -20,6 +20,7 @@ for multiple machines, managed from a single repository.
 - **Docker** — rootless daemon via systemd user service (oryp6 only)
 - **Fonts** — FiraCode Nerd Font
 - **ai-coding** — runtime monorepo fetched from GitHub and built into the Nix store; no manual clone needed
+- **Athenaeum corpus watcher** — watches `~/Documents/corpus` and reingests PDFs/EPUBs on change (systemd user service on Linux, launchd agent on macOS)
 
 ## Quick start
 

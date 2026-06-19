@@ -52,11 +52,67 @@ in
     '';
   };
 
+  # User-facing corpus directory watched for new PDFs/EPUBs. Deliberately NOT
+  # hidden (under ~/Documents) so it is reachable from file-manager tools and the
+  # PDFs/EPUBs can be browsed directly. Kept separate from dataDir so the corpus
+  # is decoupled from the disposable LanceDB state under ~/.local/share/athenaeum.
+  options.programs.athenaeum.watchDir = lib.mkOption {
+    type = lib.types.str;
+    default = "${config.home.homeDirectory}/Documents/corpus";
+    description = ''
+      Directory watched for new PDF/EPUB files. Any change triggers a full
+      recursive athenaeum-ingest run over this directory. Resolved per-machine
+      from config.home.homeDirectory; defaults to ~/Documents/corpus.
+    '';
+  };
+
+  # The fully-resolved watchexec invocation, assembled in config below. Read-only
+  # so each machine module wires it into its OS service unit (systemd on Linux,
+  # launchd on macOS) without re-deriving store paths. MUST be a single flat
+  # whitespace-delimited string with no newlines and no shell metacharacters:
+  # systemd splits it into argv directly, and the macOS unit passes it as one
+  # argument to `sh -lc`.
+  options.programs.athenaeum.watchCommand = lib.mkOption {
+    type = lib.types.str;
+    readOnly = true;
+    description = ''
+      watchexec command line that watches programs.athenaeum.watchDir and runs a
+      full recursive athenaeum-ingest over it on change. The ingest subprocess is
+      forced to run with cwd = programs.athenaeum.dataDir (via watchexec --workdir)
+      so the CLI's relative db_path (./data/athenaeum) resolves to the shared store.
+    '';
+  };
+
   config.programs.athenaeum.dataDir = dataDir;
 
-  # Only the ingest CLI lands on PATH; the MCP server is wired into OpenCode via
-  # the absolute store path in opencodeOverlay below, so it is deliberately omitted.
-  config.home.packages = [ athenaeumIngest ];
+  # Assemble the watchexec command. Flags, each deliberate:
+  #   --watch <corpus>         watch the corpus directory recursively
+  #   --workdir <dataDir>      run the ingest subprocess from the data dir so the
+  #                            CLI's RELATIVE db_path (./data/athenaeum) resolves to
+  #                            the shared LanceDB store the MCP server reads. This is
+  #                            the primary cwd guarantee; the unit's WorkingDirectory
+  #                            is a second, belt-and-suspenders layer.
+  #   --debounce 5s            coalesce a burst of drops into one reingest, and avoid
+  #                            firing on a partially-written file
+  #   --postpone               do NOT reingest at unit startup (boot / switch); only
+  #                            act on a genuine post-startup change (corpus is stable)
+  #   --on-busy-update queue   if a change arrives mid-reingest, queue another run
+  #                            after (watchexec default is do-nothing = dropped file)
+  # No --exts filter: any change triggers a full reingest; athenaeum-ingest's own
+  # discovery filters to .pdf/.epub.
+  config.programs.athenaeum.watchCommand =
+    "${pkgs.watchexec}/bin/watchexec "
+    + "--watch ${config.programs.athenaeum.watchDir} "
+    + "--workdir ${dataDir} "
+    + "--debounce 5s "
+    + "--postpone "
+    + "--on-busy-update queue "
+    + "-- ${athenaeumPkg}/bin/athenaeum-ingest ${config.programs.athenaeum.watchDir} --recursive --verbose";
+
+  # Only the ingest CLI and watchexec land on PATH; the MCP server is wired into
+  # OpenCode via the absolute store path in opencodeOverlay below, so it is
+  # deliberately omitted.
+  config.home.packages = [ athenaeumIngest pkgs.watchexec ];
 
   config.programs.athenaeum.opencodeOverlay = {
     # MCP server registration. command is the store-built binary instead of
