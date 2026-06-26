@@ -10,11 +10,13 @@ let
   aiCodingPkg = inputs.ai-coding.packages.${meta.system}.default;
   baseConfig = builtins.fromJSON (builtins.readFile "${aiCodingPkg}/opencode.json");
   oryp6OpencodeConfig = builtins.toJSON (
-    lib.recursiveUpdate baseConfig config.programs.athenaeum.opencodeOverlay
+    lib.recursiveUpdate
+      (lib.recursiveUpdate baseConfig config.programs.athenaeum.opencodeOverlay)
+      config.programs.cerebrum.opencodeOverlay
   );
 in
 {
-  imports = [ ../athenaeum.nix ];
+  imports = [ ../athenaeum.nix ../cerebrum.nix ];
 
   # Override the shared opencode.json (deployed by opencode.nix) with a static
   # file that merges the athenaeum MCP overlay onto the upstream config.

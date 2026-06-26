@@ -6,8 +6,8 @@ let
   # are inherited from the upstream file so they can never drift out of sync with
   # the other machines.
   #
-  # Merge order: upstream base ← Ollama provider ← athenaeum overlay. The two
-  # overlays touch disjoint top-level keys (provider.* vs mcp.* / tools.* /
+  # Merge order: upstream base ← Ollama provider ← athenaeum overlay ← cerebrum overlay.
+  # The overlays touch disjoint top-level keys (provider.* vs mcp.* / tools.* /
   # agent.*), so there is no collision. This stays a single merge feeding the
   # single lib.mkForce write below — adding a second opencode.json definition
   # would conflict with that mkForce.
@@ -18,27 +18,29 @@ let
   aiCodingPkg = inputs.ai-coding.packages.${meta.system}.default;
   baseConfig = builtins.fromJSON (builtins.readFile "${aiCodingPkg}/opencode.json");
   m5OpencodeConfig = builtins.toJSON (lib.recursiveUpdate
-    (lib.recursiveUpdate baseConfig {
-      provider = {
-        ollama = {
-          npm = "@ai-sdk/openai-compatible";
-          name = "Ollama (local)";
-          options = {
-            baseURL = "http://localhost:11434/v1";
-          };
-          models = {
-            "gemma4:26b" = {
-              name = "Gemma 4 26B (local)";
-              limit = {
-                context = 32768;
-                output = 8192;
+    (lib.recursiveUpdate
+      (lib.recursiveUpdate baseConfig {
+        provider = {
+          ollama = {
+            npm = "@ai-sdk/openai-compatible";
+            name = "Ollama (local)";
+            options = {
+              baseURL = "http://localhost:11434/v1";
+            };
+            models = {
+              "gemma4:26b" = {
+                name = "Gemma 4 26B (local)";
+                limit = {
+                  context = 32768;
+                  output = 8192;
+                };
               };
             };
           };
         };
-      };
-    })
-    config.programs.athenaeum.opencodeOverlay);
+      })
+      config.programs.athenaeum.opencodeOverlay)
+    config.programs.cerebrum.opencodeOverlay);
 
   # M5-specific local agent.
   # Mirrors opencode/agents/local.md exactly, with model and description
@@ -74,6 +76,7 @@ in
   imports = [
     ../claude-code.nix
     ../athenaeum.nix
+    ../cerebrum.nix
   ];
 
   # M5 MacBook-specific configuration.
