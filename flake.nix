@@ -16,6 +16,10 @@
       url = "github:vansweej/athenaeum-mcp";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    cerebrum = {
+      url = "github:vansweej/cerebrum-mcp";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
