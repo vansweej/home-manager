@@ -252,6 +252,7 @@ home.packages = with pkgs; [
 | `sccache` | Package + env (`RUSTC_WRAPPER`, `CARGO_INCREMENTAL`) | `modules/sccache.nix` | Local-only Rust/C++ compiler cache; all machines |
 | `watchexec` | Package | `modules/athenaeum.nix` | Cross-platform file watcher; drives the corpus reingest; oryp6 + M1 + M5 |
 | `athenaeum-watch` | `systemd.user.services` (Linux) / `launchd.agents` (Darwin) | `modules/machines/{oryp6,m1,m5}.nix` | Watches `~/Documents/corpus`; runs `athenaeum-ingest` on change |
+| `cerebrum` | MCP server (via `cerebrum-wrapped`) | `modules/cerebrum.nix` | Two-tier agent memory (Synapse + Cortex); all machines; all agents; MockEmbedder (offline) |
 
 ---
 
@@ -264,6 +265,7 @@ home.packages = with pkgs; [
 | `nixgl` | `github:guibou/nixGL` | Overlay applied on Linux only; never on Darwin |
 | `ai-coding` | `github:vansweej/ai-coding` | Two-phase Nix derivation; `node_modules` baked in; pinned in `flake.lock` |
 | `athenaeum` | `github:vansweej/athenaeum-mcp` | Built by Nix into a store binary (mirrors `ai-coding`); `inputs.nixpkgs.follows = "nixpkgs"`; updated via `nix flake update athenaeum` |
+| `cerebrum` | `github:vansweej/cerebrum-mcp` | Two-tier memory MCP server; `inputs.nixpkgs.follows = "nixpkgs"`; updated via `nix flake update cerebrum` |
 
 The `nixgl.overlay` is conditionally applied in `mkHome` based on `isDarwin`,
 making `pkgs.nixgl.*` available only on Linux builds.
@@ -276,6 +278,17 @@ binary is launched with `cwd` set to `~/.local/share/athenaeum` (created by per-
 `home.activation` scripts), so the server's relative `db_path` (`./data/athenaeum`)
 resolves to a writable location outside the Nix store. Existing ingested data is not
 migrated on switch — re-ingest after deploying.
+
+The `cerebrum` input is updated with `nix flake update cerebrum`. The store-built
+wrapped binary creates `~/.local/share/cerebrum` on first run and cd's into it, so
+no activation script or cwd pinning is needed. Data persists as a LanceDB table at
+`~/.local/share/cerebrum/data/cerebrum/memories.lance`. The shipped binary uses
+`MockEmbedder` (hash-based, offline) — semantic search via Ollama is a future
+upgrade. Tools (`cerebrum_remember`, `cerebrum_recall`, `cerebrum_memorize`,
+`cerebrum_forget`, `cerebrum_end_session`, `cerebrum_recall_by_scope`) are enabled
+for all agents with no per-agent gating. Per-agent memory isolation via the
+`recall_by_scope` tool's `agent:<id>` scope is supported by the server but not yet
+configured — all memories currently land in the `global` scope.
 
 ### Running bulk ingest
 
