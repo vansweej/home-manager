@@ -44,18 +44,49 @@ in
           foliate-nixgl
         ];
 
-        # Make Foliate the default handler for the e-book formats its .desktop
-        # entry advertises. References foliate-nixgl.desktop (the id defined
-        # above), not the upstream app-id. xdg.enable (common.nix) generates
-        # ~/.config/mimeapps.list from this.
+        # Owns ~/.config/mimeapps.list. Declares BOTH the pre-existing Firefox
+        # browser/HTML defaults (previously set interactively via a generated
+        # userapp-*.desktop) AND the Foliate e-book defaults, so home-manager can
+        # take over the file without clobbering prior settings.
+        #
+        # NOTE: userapp-Firefox-R7UUL3.desktop is a desktop-environment-generated
+        # launcher in ~/.local/share/applications, NOT managed by Nix. It must keep
+        # existing on disk for these associations to resolve. If it is ever
+        # regenerated with a different random suffix, update these entries.
         xdg.mimeApps = {
           enable = true;
           defaultApplications = {
+            # Browser / HTML (preserved from prior interactive selection)
+            "x-scheme-handler/http" = "userapp-Firefox-R7UUL3.desktop";
+            "x-scheme-handler/https" = "userapp-Firefox-R7UUL3.desktop";
+            "x-scheme-handler/chrome" = "userapp-Firefox-R7UUL3.desktop";
+            "text/html" = "userapp-Firefox-R7UUL3.desktop";
+            "application/x-extension-htm" = "userapp-Firefox-R7UUL3.desktop";
+            "application/x-extension-html" = "userapp-Firefox-R7UUL3.desktop";
+            "application/x-extension-shtml" = "userapp-Firefox-R7UUL3.desktop";
+            "application/xhtml+xml" = "userapp-Firefox-R7UUL3.desktop";
+            "application/x-extension-xhtml" = "userapp-Firefox-R7UUL3.desktop";
+            "application/x-extension-xht" = "userapp-Firefox-R7UUL3.desktop";
+
+            # E-book formats → Foliate
             "application/epub+zip" = "foliate-nixgl.desktop";
             "application/x-mobipocket-ebook" = "foliate-nixgl.desktop";
             "application/vnd.amazon.mobi8-ebook" = "foliate-nixgl.desktop";
             "application/x-fictionbook+xml" = "foliate-nixgl.desktop";
             "application/vnd.comicbook+zip" = "foliate-nixgl.desktop";
+          };
+          associations.added = {
+            # Mirrors the [Added Associations] block from the prior file.
+            "x-scheme-handler/http" = "userapp-Firefox-R7UUL3.desktop";
+            "x-scheme-handler/https" = "userapp-Firefox-R7UUL3.desktop";
+            "x-scheme-handler/chrome" = "userapp-Firefox-R7UUL3.desktop";
+            "text/html" = "userapp-Firefox-R7UUL3.desktop";
+            "application/x-extension-htm" = "userapp-Firefox-R7UUL3.desktop";
+            "application/x-extension-html" = "userapp-Firefox-R7UUL3.desktop";
+            "application/x-extension-shtml" = "userapp-Firefox-R7UUL3.desktop";
+            "application/xhtml+xml" = "userapp-Firefox-R7UUL3.desktop";
+            "application/x-extension-xhtml" = "userapp-Firefox-R7UUL3.desktop";
+            "application/x-extension-xht" = "userapp-Firefox-R7UUL3.desktop";
           };
         };
 
