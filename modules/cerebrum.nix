@@ -4,7 +4,7 @@ let
   # Store-built wrapped binary (named `cerebrum`). The wrapper creates and cd's
   # into ~/.local/share/cerebrum itself, so this module needs no dataDir option,
   # no activation mkdir, and no cwd in the MCP registration. The shipped binary
-  # uses MockEmbedder (offline, hash-based) — no Ollama dependency.
+  # uses real Ollama embeddings (lazy-initialized on first remember/recall call).
   cerebrumPkg = inputs.cerebrum.packages.${meta.system}.default;
 in
 {

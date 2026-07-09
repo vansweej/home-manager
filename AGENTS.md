@@ -252,7 +252,7 @@ home.packages = with pkgs; [
 | `sccache` | Package + env (`RUSTC_WRAPPER`, `CARGO_INCREMENTAL`) | `modules/sccache.nix` | Local-only Rust/C++ compiler cache; all machines |
 | `watchexec` | Package | `modules/athenaeum.nix` | Cross-platform file watcher; drives the corpus reingest; oryp6 + M1 + M5 |
 | `athenaeum-watch` | `systemd.user.services` (Linux) / `launchd.agents` (Darwin) | `modules/machines/{oryp6,m1,m5}.nix` | Watches `~/Documents/corpus`; runs `athenaeum-ingest` on change |
-| `cerebrum` | MCP server (via `cerebrum-wrapped`) | `modules/cerebrum.nix` | Two-tier agent memory (Synapse + Cortex); all machines; all agents; MockEmbedder (offline) |
+| `cerebrum` | MCP server (via `cerebrum-wrapped`) | `modules/cerebrum.nix` | Two-tier agent memory (Synapse + Cortex); all machines; all agents; lazy Ollama startup |
 
 ---
 
@@ -283,8 +283,9 @@ The `cerebrum` input is updated with `nix flake update cerebrum`. The store-buil
 wrapped binary creates `~/.local/share/cerebrum` on first run and cd's into it, so
 no activation script or cwd pinning is needed. Data persists as a LanceDB table at
 `~/.local/share/cerebrum/data/cerebrum/memories.lance`. The shipped binary uses
-`MockEmbedder` (hash-based, offline) — semantic search via Ollama is a future
-upgrade. Tools (`cerebrum_remember`, `cerebrum_recall`, `cerebrum_memorize`,
+real Ollama embeddings (lazy-initialized on first `remember()`/`recall()` call) — Ollama
+is contacted only when needed, avoiding cold-start hangs during MCP initialization.
+Tools (`cerebrum_remember`, `cerebrum_recall`, `cerebrum_memorize`,
 `cerebrum_forget`, `cerebrum_end_session`, `cerebrum_recall_by_scope`) are enabled
 for all agents with no per-agent gating. Per-agent memory isolation via the
 `recall_by_scope` tool's `agent:<id>` scope is supported by the server but not yet

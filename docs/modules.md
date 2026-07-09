@@ -165,6 +165,50 @@ and troubleshooting), see the [corpus watcher runbook](athenaeum-watcher.md).
 
 ---
 
+## `modules/cerebrum.nix` — cerebrum-mcp server overlay {#cerebrum-options}
+
+Imported by `common.nix`. Manages the cerebrum-mcp MCP server registration for all machines.
+
+### What the overlay contains
+
+| Key | Value | Description |
+|---|---|---|
+| `mcp.cerebrum` | MCP server block | Registers the store-built `cerebrum` binary (from the `cerebrum` flake input) as a `type: "local"` server. The wrapped binary creates `~/.local/share/cerebrum` on first run and cd's into it, so the relative `./data/cerebrum` db_path resolves to a writable location outside the Nix store. |
+
+The server's `command` is the absolute store path of the store-built binary
+(`${cerebrumPkg}/bin/cerebrum`). No `cwd` pinning is needed — the wrapper handles it.
+
+### Lazy Ollama Startup
+
+The cerebrum server initializes instantly without contacting Ollama. The embedder is
+constructed but does not probe or warm up the model. Ollama is contacted lazily on
+the first `remember()` or `recall()` call. This avoids blocking the MCP stdio handshake
+during cold-start (e.g., when Ollama is warming up a model).
+
+### Tools
+
+All agents have access to the following tools (no per-agent gating):
+
+| Tool | Purpose |
+|---|---|
+| `cerebrum_remember` | Store a memory in Synapse with optional salience score |
+| `cerebrum_recall` | Search both tiers for memories matching a query |
+| `cerebrum_recall_by_scope` | Search with scope filtering (global, user, agent, session) |
+| `cerebrum_memorize` | Promote a memory from Synapse to Cortex |
+| `cerebrum_forget` | Delete a memory from both tiers |
+| `cerebrum_end_session` | Clear Synapse and auto-promote high-salience memories to Cortex |
+
+### Data Location
+
+- **Data Directory:** `~/.local/share/cerebrum/`
+- **LanceDB Store:** `~/.local/share/cerebrum/data/cerebrum/memories.lance`
+- **Created on first run:** The wrapped binary creates the directory automatically
+
+For operational checks (verifying tools are registered, health checks, smoke test,
+and troubleshooting), see the [cerebrum operational runbook](cerebrum.md).
+
+---
+
 ## `modules/linux.nix` — Linux only
 
 Applied to all Linux machines (`x86_64-linux` and `aarch64-linux`).
