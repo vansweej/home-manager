@@ -239,6 +239,11 @@ When Cerebrum starts:
 
 This lazy startup pattern avoids blocking the MCP initialization timeout, even if Ollama is warming up a model.
 
+**⚠️ Important:** If you remove the `nomic-embed-text` model (e.g., `ollama rm nomic-embed-text`) while an old Cerebrum binary is still deployed, the old binary will crash on startup because it still contains the blocking warmup probe. To avoid this during cold-start testing:
+1. Complete `home-manager switch --flake .#<machine>` to deploy the new lazy binary
+2. Then remove the model for testing
+3. Restart OpenCode — the new binary will initialize successfully without pre-warming
+
 ### First Embedding Request
 
 When the first `remember()` or `recall()` call is made:
