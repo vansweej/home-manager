@@ -51,11 +51,11 @@
         "rust-overlay": "rust-overlay_2"
       },
       "locked": {
-        "lastModified": 1782525284,
-        "narHash": "sha256-ellzuX9gLx/UvGolXifKMI8sn8oDD8soSIPso9+Qp24=",
+        "lastModified": 1783600358,
+        "narHash": "sha256-g7dvUYuBVCDKCthcXVkdC3OLsz+Yq2psKreIQvG2REg=",
         "owner": "vansweej",
         "repo": "cerebrum-mcp",
-        "rev": "13501d11298f2cdab115f857b252d76916bd3e10",
+        "rev": "572c4308b2c0d2a3157657ea5f1e01cfbceb1c6a",
         "type": "github"
       },
       "original": {
