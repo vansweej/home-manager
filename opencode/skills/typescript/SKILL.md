@@ -98,17 +98,17 @@ function parseEvent(raw: unknown): Result<AIRequestEvent> {
 ```typescript
 import { describe, expect, it } from "bun:test";
 
-import { COPILOT_DEFAULT_PROFILE } from "@ai-system/config/model-profiles";
+import { LOCAL_PROFILE } from "@ai-system/config/model-profiles";
 
 import { resolveModelForRole } from "./model-profiles";
 
 describe("resolveModelForRole", () => {
-  it("returns claude-sonnet-4.6 for planner in copilot-default", () => {
-    expect(resolveModelForRole("planner", COPILOT_DEFAULT_PROFILE)).toBe("claude-sonnet-4.6");
+  it("returns gemma4:26b for planner in local", () => {
+    expect(resolveModelForRole("planner", LOCAL_PROFILE)).toBe("gemma4:26b");
   });
 
-  it("returns claude-sonnet-4.6 for implementer in copilot-default", () => {
-    expect(resolveModelForRole("implementer", COPILOT_DEFAULT_PROFILE)).toBe("claude-sonnet-4.6");
+  it("returns gemma4:26b for implementer in local", () => {
+    expect(resolveModelForRole("implementer", LOCAL_PROFILE)).toBe("gemma4:26b");
   });
 });
 ```

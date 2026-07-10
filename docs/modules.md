@@ -306,8 +306,6 @@ Overrides three shared defaults with M5-specific values:
   > wholesale. The current schema has no lists at overlapping keys, so there is
   > no collision risk. If that changes, revisit the merge strategy.
 
-- **`local.md` agent** — replaces the shared local agent with an M5-specific
-  version whose frontmatter sets `model: ollama/gemma4:26b`.
 - **`launchd.agents.athenaeum-watch`** — registers the corpus watcher (logs to
   `~/.local/share/athenaeum/watch.log`).
 
