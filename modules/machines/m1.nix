@@ -8,10 +8,21 @@ let
   # not define, so there is no clobbering.
   aiCodingPkg = inputs.ai-coding.packages.${meta.system}.default;
   baseConfig = builtins.fromJSON (builtins.readFile "${aiCodingPkg}/opencode.json");
+  modelOverlay = {
+    agent = {
+      brainstorm = { model = "github-copilot/claude-opus-4.8"; };
+      spar       = { model = "github-copilot/claude-opus-4.8"; };
+      teach      = { model = "github-copilot/claude-opus-4.8"; };
+      plan       = { model = "github-copilot/claude-opus-4.8"; };
+      explore    = { model = "github-copilot/claude-opus-4.8"; };
+    };
+  };
   m1OpencodeConfig = builtins.toJSON (
     lib.recursiveUpdate
-      (lib.recursiveUpdate baseConfig config.programs.athenaeum.opencodeOverlay)
-      config.programs.cerebrum.opencodeOverlay
+      (lib.recursiveUpdate
+        (lib.recursiveUpdate baseConfig config.programs.athenaeum.opencodeOverlay)
+        config.programs.cerebrum.opencodeOverlay)
+      modelOverlay
   );
 in
 {

@@ -17,30 +17,41 @@ let
   # / agent, so there is no collision risk. If that changes, revisit.
   aiCodingPkg = inputs.ai-coding.packages.${meta.system}.default;
   baseConfig = builtins.fromJSON (builtins.readFile "${aiCodingPkg}/opencode.json");
+  modelOverlay = {
+    agent = {
+      brainstorm = { model = "github-copilot/claude-opus-4.8"; };
+      spar       = { model = "github-copilot/claude-opus-4.8"; };
+      teach      = { model = "github-copilot/claude-opus-4.8"; };
+      plan       = { model = "github-copilot/claude-opus-4.8"; };
+      explore    = { model = "github-copilot/claude-opus-4.8"; };
+    };
+  };
   m5OpencodeConfig = builtins.toJSON (lib.recursiveUpdate
     (lib.recursiveUpdate
-      (lib.recursiveUpdate baseConfig {
-        provider = {
-          ollama = {
-            npm = "@ai-sdk/openai-compatible";
-            name = "Ollama (local)";
-            options = {
-              baseURL = "http://localhost:11434/v1";
-            };
-            models = {
-              "gemma4:26b" = {
-                name = "Gemma 4 26B (local)";
-                limit = {
-                  context = 32768;
-                  output = 8192;
+      (lib.recursiveUpdate
+        (lib.recursiveUpdate baseConfig {
+          provider = {
+            ollama = {
+              npm = "@ai-sdk/openai-compatible";
+              name = "Ollama (local)";
+              options = {
+                baseURL = "http://localhost:11434/v1";
+              };
+              models = {
+                "gemma4:26b" = {
+                  name = "Gemma 4 26B (local)";
+                  limit = {
+                    context = 32768;
+                    output = 8192;
+                  };
                 };
               };
             };
           };
-        };
-       })
-       config.programs.athenaeum.opencodeOverlay)
-     config.programs.cerebrum.opencodeOverlay);
+        })
+        config.programs.athenaeum.opencodeOverlay)
+      config.programs.cerebrum.opencodeOverlay)
+    modelOverlay);
 in
 {
   imports = [
