@@ -63,6 +63,20 @@ export default tool({
       .describe(
         "Optional request text for dev-cycle pipelines (e.g. 'Add error handling to the parser')",
       ),
+    plan: tool.schema
+      .string()
+      .optional()
+      .describe("Path to a plan file for rust-plan-cycle (e.g. './plan.md'). Resolved to absolute path."),
+    maxRetries: tool.schema
+      .number()
+      .int()
+      .min(0)
+      .optional()
+      .describe("Maximum number of retries for resumable failures (rust-plan-cycle only)."),
+    profile: tool.schema
+      .enum(["local", "copilot-default", "hybrid"])
+      .optional()
+      .describe("Model profile to use (local, copilot-default, or hybrid). Defaults to copilot-default if unset."),
   },
   async execute(args) {
     const monorepoRoot = process.env.AI_CODING_MONOREPO;
@@ -73,20 +87,83 @@ export default tool({
       );
     }
 
+    // Guard: rust-plan-cycle requires either a plan file or input
+    if (args.name === "rust-plan-cycle" && !args.plan && !args.input) {
+      return (
+        "Error: rust-plan-cycle requires either a plan file (--plan) or input text (--input). " +
+        "Provide at least one."
+      );
+    }
+
     const bunBin = await resolveBun();
     const workspace = resolve(args.workspace);
     const argv = ["run", "pipeline", args.name, workspace];
+
+    // Add plan flag if provided (resolve to absolute path)
+    if (args.plan) {
+      const absolutePlan = resolve(args.plan);
+      argv.push("--plan", absolutePlan);
+    }
+
+    // Add input flag if provided
     if (args.input) {
       argv.push("--input", args.input);
     }
+
+    // Add max-retries flag if provided
+    if (args.maxRetries !== undefined) {
+      argv.push("--max-retries", String(args.maxRetries));
+    }
+
+    // Add profile flag if provided (do NOT default it — let CLI and env override handle defaults)
+    if (args.profile) {
+      argv.push("--profile", args.profile);
+    }
+
     const cmd = `${bunBin} ${argv.join(" ")}`;
 
     try {
-      const output = await Bun.$`${bunBin} ${argv}`.cwd(monorepoRoot).text();
-      return output.trim() || "Pipeline completed with no output.";
+      const proc = await Bun.$`${bunBin} ${argv}`.cwd(monorepoRoot).nothrow().quiet();
+      const exitCode = proc.exitCode;
+
+      if (exitCode === 0) {
+        // Success
+        const output = proc.stdout.toString().trim();
+        return output || "Pipeline completed successfully.";
+      } else if (exitCode === 2) {
+        // Resumable failure
+        const output = proc.stdout.toString().trim();
+        const stderr = proc.stderr.toString().trim();
+        const details = stderr || output || "Unknown error";
+        return (
+          "Pipeline encountered a resumable failure (exit code 2). " +
+          "You can run the pipeline again to resume from where it stopped.\n\n" +
+          `Details:\n${details}`
+        );
+      } else if (exitCode === 3) {
+        // Environment/input error (e.g., protected branch)
+        const stderr = proc.stderr.toString().trim();
+        const output = proc.stdout.toString().trim();
+        const details = stderr || output || "Unknown error";
+        return (
+          "Pipeline encountered an environment or input error (exit code 3). " +
+          "Check the workspace, branch, or plan file and try again.\n\n" +
+          `Details:\n${details}`
+        );
+      } else {
+        // Other non-zero exit code
+        const stderr = proc.stderr.toString().trim();
+        const output = proc.stdout.toString().trim();
+        const details = stderr || output || "Unknown error";
+        return (
+          `Pipeline failed with exit code ${exitCode}.\n\n` +
+          `Details:\n${details}\n\n` +
+          `Command: ${cmd}`
+        );
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      return `Pipeline failed: ${message}\nCommand: ${cmd}`;
+      return `Pipeline execution error: ${message}\nCommand: ${cmd}`;
     }
   },
 });
