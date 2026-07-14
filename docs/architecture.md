@@ -150,6 +150,9 @@ store would break that resolution. The tools are full implementations that deleg
 to the ai-coding monorepo at runtime via subprocess (`bun run <script> --cwd
 $AI_CODING_MONOREPO`). They do not import code from ai-coding.
 
+See [`docs/pipeline-tool.md`](./pipeline-tool.md) for details on the pipeline tool's
+invocation surfaces, execution flow, and exit-code handling.
+
 ## `opencode.json` config flow
 
 `opencode.json` is the single source of truth for base OpenCode permissions. It
