@@ -1,7 +1,7 @@
 ---
 description: Read-only codebase exploration using Claude Sonnet 4.6
 mode: primary
-model: github-copilot/claude-sonnet-4.6
+model: github-copilot/claude-opus-4.8
 temperature: 0.3
 permission:
   edit: deny
