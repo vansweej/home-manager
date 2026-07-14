@@ -41,16 +41,13 @@ async function resolveBun(): Promise<string> {
 
 export default tool({
   description:
-    "Run an ai-coding pipeline (scaffold-rust, scaffold-cpp, dev-cycle, rust-dev-cycle, cmake-dev-cycle, rust-plan-cycle). " +
-    "Use this when asked to scaffold a new project, run a full plan→implement→test cycle on a workspace, or execute a pre-written plan.",
+    "Run an ai-coding pipeline (scaffold-rust, scaffold-cpp, rust-plan-cycle). " +
+    "Use this when asked to scaffold a new project or execute a pre-written plan.",
   args: {
     name: tool.schema
       .enum([
         "scaffold-rust",
         "scaffold-cpp",
-        "dev-cycle",
-        "rust-dev-cycle",
-        "cmake-dev-cycle",
         "rust-plan-cycle",
       ])
       .describe("Pipeline to run"),
@@ -61,7 +58,7 @@ export default tool({
       .string()
       .optional()
       .describe(
-        "Optional request text for dev-cycle pipelines (e.g. 'Add error handling to the parser')",
+        "Optional request text for rust-plan-cycle (e.g. 'Add error handling to the parser')",
       ),
     plan: tool.schema
       .string()
