@@ -14,3 +14,4 @@ Available pipelines:
 - dev-cycle       <workspace>             TypeScript: plan → implement → test
 - rust-dev-cycle  <workspace>             Rust: plan → implement → fmt → clippy → test → coverage
 - cmake-dev-cycle <workspace>             C++: plan → implement → configure → build → ctest
+- rust-plan-cycle <workspace> [--plan <file>] [--input "..."] [--max-retries <int>] [--profile <name>]  Rust: execute a pre-written plan (plan → implement → fmt → clippy → test → coverage)
