@@ -31,5 +31,20 @@ in
         enabled = true;
       };
     };
+
+    # Agents that carry a per-agent `tools` allowlist (added by athenaeum.nix)
+    # do not inherit MCP tools that are absent from that list — so cerebrum
+    # silently drops off them, even though it is globally enabled. Re-assert
+    # cerebrum on each such agent. recursiveUpdate deep-merges these into the
+    # athenaeum `tools` maps (cerebrum is applied last in every machine module),
+    # yielding e.g. explore.tools = { "athenaeum*" = true; "cerebrum*" = true; }.
+    # Agents without a `tools` block (e.g. build) already get cerebrum by default.
+    agent = {
+      brainstorm = { tools = { "cerebrum*" = true; }; };
+      spar       = { tools = { "cerebrum*" = true; }; };
+      teach      = { tools = { "cerebrum*" = true; }; };
+      plan       = { tools = { "cerebrum*" = true; }; };
+      explore    = { tools = { "cerebrum*" = true; }; };
+    };
   };
 }

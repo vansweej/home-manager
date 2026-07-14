@@ -287,9 +287,17 @@ real Ollama embeddings (lazy-initialized on first `remember()`/`recall()` call) 
 is contacted only when needed, avoiding cold-start hangs during MCP initialization.
 Tools (`cerebrum_remember`, `cerebrum_recall`, `cerebrum_memorize`,
 `cerebrum_forget`, `cerebrum_end_session`, `cerebrum_recall_by_scope`) are enabled
-for all agents with no per-agent gating. Per-agent memory isolation via the
-`recall_by_scope` tool's `agent:<id>` scope is supported by the server but not yet
-configured — all memories currently land in the `global` scope.
+globally, so agents **without** a per-agent `tools` allowlist (e.g. `build` and the
+subagents) get them by default. However, OpenCode treats a per-agent `tools` map as
+an allowlist for MCP tools: any MCP tool not named in that map is dropped from that
+agent. Because `athenaeum.nix` gives the five thinking agents (`brainstorm`, `spar`,
+`teach`, `plan`, `explore`) an `athenaeum*` allowlist, `cerebrum.nix` must re-assert
+`cerebrum*` on those same agents or cerebrum silently disappears from them. This is
+done via the `agent` block in `programs.cerebrum.opencodeOverlay`, which
+`recursiveUpdate` deep-merges into the athenaeum `tools` maps (cerebrum applied last
+in every machine module). Per-agent memory isolation via the `recall_by_scope` tool's
+`agent:<id>` scope is supported by the server but not yet configured — all memories
+currently land in the `global` scope.
 
 ### Running bulk ingest
 

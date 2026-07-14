@@ -187,7 +187,11 @@ during cold-start (e.g., when Ollama is warming up a model).
 
 ### Tools
 
-All agents have access to the following tools (no per-agent gating):
+The following tools are registered. They are enabled globally; agents without a
+per-agent `tools` allowlist get them by default, while the five athenaeum-scoped
+thinking agents (`brainstorm`, `spar`, `teach`, `plan`, `explore`) have `cerebrum*`
+re-asserted in `cerebrum.nix` because OpenCode treats a per-agent `tools` map as an
+allowlist for MCP tools:
 
 | Tool | Purpose |
 |---|---|

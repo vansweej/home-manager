@@ -24,7 +24,12 @@ Cerebrum is a two-tier agent memory subsystem deployed as a Model Context Protoc
 
 ## Tools Registered
 
-All agents have access to the following MCP tools (no per-agent gating):
+The following MCP tools are registered. They are enabled globally, so agents
+without a per-agent `tools` allowlist (e.g. `build` and the subagents) get them by
+default. The five thinking agents (`brainstorm`, `spar`, `teach`, `plan`, `explore`)
+carry an athenaeum `tools` allowlist, and OpenCode treats such a map as an allowlist
+for MCP tools — so `cerebrum.nix` re-asserts `cerebrum*` on those agents to keep the
+tools from being dropped:
 
 | Tool | Purpose |
 |------|---------|
