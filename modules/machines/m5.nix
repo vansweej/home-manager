@@ -55,7 +55,6 @@ let
 in
 {
   imports = [
-    ../claude-code.nix
     ../athenaeum.nix
     ../cerebrum.nix
   ];

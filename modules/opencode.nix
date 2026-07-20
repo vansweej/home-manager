@@ -1,7 +1,20 @@
 { pkgs, lib, config, inputs, meta, ... }:
 
 let
-  opencodeDir = ../opencode;
+  # The authored agents/skills/commands/bin/AGENTS.md/package.json content
+  # lives in the agora flake input's source tree (github:vansweej/agora).
+  # This references the flake input's raw store path directly (like the old
+  # `../opencode` relative path) rather than a built package — no per-system
+  # derivation build is needed for plain file content, which also avoids
+  # requiring an x86_64-linux builder on darwin hosts for the oryp6 config.
+  # To update: nix flake update agora && home-manager switch.
+  opencodeDir = inputs.agora;
+
+  # tools/*.ts are deployed as live mkOutOfStoreSymlinks (not nix-store
+  # copies — see toolEntries below), pointing at the agora dev checkout on
+  # disk so edits are picked up without a home-manager switch.
+  toolsDevDir = "${config.home.homeDirectory}/Projects/agora/tools";
+
   # The ai-coding Nix package: full source tree + node_modules, built offline
   # from the pinned flake input. Read-only in the store; bun run works fine
   # from read-only paths (verified). No git clone or bun install at activation.
@@ -9,8 +22,8 @@ let
   aiCodingRepo = "${aiCodingPkg}";
 
   # ── Auto-discover agents ────────────────────────────────────────────────────
-  # Every .md file in opencode/agents/ is deployed as a nix-store copy.
-  # Adding a new agent: drop <name>.md in opencode/agents/, git add, switch.
+  # Every .md file in agora's agents/ is deployed as a nix-store copy.
+  # Adding a new agent: drop <name>.md in agora/agents/, git add, switch.
   agentFiles = builtins.readDir (opencodeDir + "/agents");
   agentEntries = lib.mapAttrs' (name: _:
     lib.nameValuePair
@@ -19,8 +32,8 @@ let
   ) (lib.filterAttrs (n: t: t == "regular" && lib.hasSuffix ".md" n) agentFiles);
 
   # ── Auto-discover skills ────────────────────────────────────────────────────
-  # Every subdirectory of opencode/skills/ is expected to contain a SKILL.md.
-  # Adding a new skill: create opencode/skills/<name>/SKILL.md, git add, switch.
+  # Every subdirectory of agora's skills/ is expected to contain a SKILL.md.
+  # Adding a new skill: create agora/skills/<name>/SKILL.md, git add, switch.
   skillDirs = builtins.readDir (opencodeDir + "/skills");
   skillEntries = lib.mapAttrs' (name: _:
     lib.nameValuePair
@@ -29,8 +42,8 @@ let
   ) (lib.filterAttrs (_: t: t == "directory") skillDirs);
 
   # ── Auto-discover commands ──────────────────────────────────────────────────
-  # Every .md file in opencode/commands/ is deployed as a nix-store copy.
-  # Adding a new command: drop <name>.md in opencode/commands/, git add, switch.
+  # Every .md file in agora's commands/ is deployed as a nix-store copy.
+  # Adding a new command: drop <name>.md in agora/commands/, git add, switch.
   commandFiles = builtins.readDir (opencodeDir + "/commands");
   commandEntries = lib.mapAttrs' (name: _:
     lib.nameValuePair
@@ -39,30 +52,30 @@ let
   ) (lib.filterAttrs (n: t: t == "regular" && lib.hasSuffix ".md" n) commandFiles);
 
   # ── Auto-discover tools ─────────────────────────────────────────────────────
-  # Every .ts file in opencode/tools/ is deployed as a live symlink pointing
-  # back into this home-manager repo. Tools use mkOutOfStoreSymlink so bun can
+  # Every .ts file in agora's tools/ is deployed as a live symlink pointing
+  # back into the agora dev checkout. Tools use mkOutOfStoreSymlink so bun can
   # resolve node_modules from ~/.config/opencode/ at runtime.
   #
-  # The source of truth for tool code is opencode/tools/ in this repo.
-  # bun install runs in ~/.config/opencode/ (see installAiCodingDeps below)
-  # to provide the @opencode-ai/plugin dependency.
+  # The source of truth for tool code is agora/tools/ (dev checkout at
+  # ~/Projects/agora). bun install runs in ~/.config/opencode/ (see
+  # installAiCodingDeps below) to provide the @opencode-ai/plugin dependency.
   #
-  # Adding a new tool: drop <name>.ts in opencode/tools/, git add, switch.
+  # Adding a new tool: drop <name>.ts in agora/tools/, git add, switch.
   toolFiles = builtins.readDir (opencodeDir + "/tools");
   toolEntries = lib.mapAttrs' (name: _:
     lib.nameValuePair
       ".config/opencode/tools/${name}"
       { source = config.lib.file.mkOutOfStoreSymlink
-          "${config.home.homeDirectory}/Projects/home-manager/opencode/tools/${name}"; }
+          "${toolsDevDir}/${name}"; }
   ) (lib.filterAttrs (n: t: t == "regular" && lib.hasSuffix ".ts" n) toolFiles);
 
   # ── Auto-discover CLI wrapper scripts ───────────────────────────────────────
-  # Every file in opencode/bin/ is deployed to ~/.local/bin/ as a nix-store
+  # Every file in agora's bin/ is deployed to ~/.local/bin/ as a nix-store
   # copy with the executable bit set. Convention: bin/ contains only shell
   # scripts (no extension). No symlinks needed — scripts have no node_modules
   # dependency.
   #
-  # Adding a new wrapper: drop <name> in opencode/bin/, git add, switch.
+  # Adding a new wrapper: drop <name> in agora/bin/, git add, switch.
   binFiles = builtins.readDir (opencodeDir + "/bin");
   binEntries = lib.mapAttrs' (name: _:
     lib.nameValuePair
@@ -104,7 +117,7 @@ in
   };
 
   # OpenCode installs its own CLI tools here.
-  # ~/.local/bin/ holds shell wrapper scripts deployed from opencode/bin/.
+  # ~/.local/bin/ holds shell wrapper scripts deployed from agora's bin/.
   home.sessionPath = [
     "$HOME/.opencode/bin"
     "$HOME/.local/bin"
@@ -113,9 +126,9 @@ in
   # ── Activation scripts ──────────────────────────────────────────────────────
 
   # Install dependencies for ~/.config/opencode/ (@opencode-ai/plugin, consumed
-  # by the tools symlinked into ~/.config/opencode/tools/) and for the
-  # home-manager opencode directory (bun resolves @opencode-ai/plugin relative
-  # to the tool file's real path via the symlink chain).
+  # by the tools symlinked into ~/.config/opencode/tools/) and for the agora
+  # dev checkout (bun resolves @opencode-ai/plugin relative to the tool
+  # file's real path via the symlink chain).
   #
   # The ai-coding monorepo itself is now a Nix package (no clone or bun install
   # needed at activation time — node_modules are baked into the store path).
@@ -144,6 +157,6 @@ in
         fi
       }
       _oc_install "$HOME/.config/opencode"
-      _oc_install "$HOME/Projects/home-manager/opencode"
+      _oc_install "$HOME/Projects/agora"
     '';
 }
