@@ -20,6 +20,10 @@
       url = "github:vansweej/cerebrum-mcp";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    agora = {
+      url = "github:vansweej/agora";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
