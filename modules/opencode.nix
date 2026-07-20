@@ -41,6 +41,19 @@ let
       { source = opencodeDir + "/skills/${name}/SKILL.md"; }
   ) (lib.filterAttrs (_: t: t == "directory") skillDirs);
 
+  # ── Auto-discover opencode-native skills ────────────────────────────────────
+  # Client-native opencode-only skills live in agora's clients/opencode/native/
+  # (bypass the LLM renderer entirely — opencode IS the source format).
+  # Deployed identically to shared skills, into the same
+  # ~/.config/opencode/skills/ namespace.
+  # Adding a new native skill: create agora/clients/opencode/native/<name>/SKILL.md, git add, switch.
+  nativeSkillDirs = builtins.readDir (opencodeDir + "/clients/opencode/native");
+  nativeSkillEntries = lib.mapAttrs' (name: _:
+    lib.nameValuePair
+      ".config/opencode/skills/${name}/SKILL.md"
+      { source = opencodeDir + "/clients/opencode/native/${name}/SKILL.md"; }
+  ) (lib.filterAttrs (_: t: t == "directory") nativeSkillDirs);
+
   # ── Auto-discover commands ──────────────────────────────────────────────────
   # Every .md file in agora's commands/ is deployed as a nix-store copy.
   # Adding a new command: drop <name>.md in agora/commands/, git add, switch.
@@ -105,6 +118,7 @@ in
   }
   // agentEntries
   // skillEntries
+  // nativeSkillEntries
   // commandEntries
   // toolEntries
   // binEntries;
