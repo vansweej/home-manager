@@ -86,83 +86,12 @@ nix build .#homeConfigurations.M5.activationPackage
 
 ## Setting up OpenCode without Nix
 
-If you don't use Nix or home-manager, you can get the full global OpenCode CLI
-setup (agents, skills, commands, pipeline tool) by generating a self-contained
-tarball on your machine and extracting it into `~/.config/opencode/`.
-
-### Prerequisites
-
-- [OpenCode CLI](https://opencode.ai) installed
-- [Bun](https://bun.sh) runtime installed
-  - macOS: `brew install bun`
-  - Linux / WSL: `curl -fsSL https://bun.sh/install | bash`
-- Git
-
-### Steps
-
-**1. Clone this repo**
-
-```bash
-git clone https://github.com/vansweej/home-manager.git ~/Projects/home-manager
-```
-
-**2. Generate the tarball**
-
-```bash
-cd ~/Projects/home-manager
-./generate-tarball.sh
-```
-
-The script automatically packs agents, skills, commands, tools, and bin wrappers
-into `opencode-setup-YYYY-MM-DD.tar.gz`. The ai-coding monorepo runtime is
-fetched separately — see step 5 below.
-
-**3. Inspect before applying (recommended)**
-
-```bash
-tar tf opencode-setup-$(date +%Y-%m-%d).tar.gz | grep -v node_modules
-```
-
-**4. Back up and extract**
-
-```bash
-cp -r ~/.config/opencode ~/.config/opencode.bak   # optional backup
-tar xzf opencode-setup-$(date +%Y-%m-%d).tar.gz -C ~/
-```
-
-This places OpenCode config in `~/.config/opencode/` and CLI wrapper scripts
-(`codebase-retrieval`, `index-codebase`) in `~/.local/bin/`.
-
-**5. Configure your shell profile**
-
-Add to `~/.bashrc`, `~/.zshrc`, or equivalent:
-
-```bash
-export AI_CODING_MONOREPO="$HOME/Projects/ai-coding"   # path to the ai-coding clone
-export PATH="$HOME/.opencode/bin:$PATH"
-export PATH="$HOME/.local/bin:$PATH"
-```
-
-> **Nix users:** `AI_CODING_MONOREPO` is set automatically by Home Manager to the
-> Nix store path of the ai-coding package. No manual export needed.
-
-Then reload: `source ~/.bashrc` (or `~/.zshrc`).
-
-**6. Restart OpenCode** to pick up the new configuration.
-
-### Updating
-
-Pull both repos, regenerate, and do a clean re-extract to avoid stale files:
-
-```bash
-cd ~/Projects/home-manager && git pull
-./generate-tarball.sh --clean
-rm -rf ~/.config/opencode
-rm -f ~/.local/bin/codebase-retrieval ~/.local/bin/index-codebase
-tar xzf ~/Projects/home-manager/opencode-setup-$(date +%Y-%m-%d).tar.gz -C ~/
-```
-
-See `README-install.md` inside the tarball for full details.
+If you don't use Nix or home-manager, colleague-facing distributable
+artifacts (agents, skills) are produced by the
+[`agora`](https://github.com/vansweej/agora) flake, not by this repo. See
+`agora`'s `packages.aios-agents-opencode` output and its README for details.
+The previous `generate-tarball.sh` monolith has been removed — the apm
+package ladder in `agora` replaces it.
 
 ---
 
