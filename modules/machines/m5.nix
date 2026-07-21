@@ -57,6 +57,7 @@ in
   imports = [
     ../athenaeum.nix
     ../cerebrum.nix
+    ../claude.nix
   ];
 
   # M5 MacBook-specific configuration.
