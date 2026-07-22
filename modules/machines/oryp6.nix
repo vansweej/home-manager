@@ -27,7 +27,7 @@ let
   );
 in
 {
-  imports = [ ../athenaeum.nix ../cerebrum.nix ];
+  imports = [ ../athenaeum.nix ../cerebrum.nix ../dev-tools.nix ];
 
   # Override the shared opencode.json (deployed by opencode.nix) with a static
   # file that merges the athenaeum MCP overlay onto the upstream config.

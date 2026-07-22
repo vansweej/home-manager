@@ -58,6 +58,7 @@ in
     ../athenaeum.nix
     ../cerebrum.nix
     ../claude.nix
+    ../dev-tools.nix
   ];
 
   # M5 MacBook-specific configuration.
