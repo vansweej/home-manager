@@ -87,11 +87,18 @@ nix build .#homeConfigurations.M5.activationPackage
 ## Setting up OpenCode without Nix
 
 If you don't use Nix or home-manager, colleague-facing distributable
-artifacts (agents, skills) are produced by the
-[`agora`](https://github.com/vansweej/agora) flake, not by this repo. See
-`agora`'s `packages.aios-agents-opencode` output and its README for details.
-The previous `generate-tarball.sh` monolith has been removed — the apm
-package ladder in `agora` replaces it.
+artifacts (agents, skills) are produced by
+[`agora`](https://github.com/vansweej/agora), not by this repo — install
+with [`apm`](https://github.com/microsoft/apm) (Agent Package Manager):
+
+```bash
+apm install vansweej/agora -t opencode -g                # OpenCode
+apm install vansweej/agora/clients/claude -t claude -g   # Claude Code
+```
+
+See `agora`'s README for the full install/compile sequence and what each
+package contains. The previous `generate-tarball.sh` monolith has been
+removed — the apm packages in `agora` replace it.
 
 ---
 
@@ -101,3 +108,6 @@ package ladder in `agora` replaces it.
 - [Adding a machine](docs/adding-a-machine.md) — step-by-step guide
 - [What each module manages](docs/modules.md) — reference for `common`, `linux`, `darwin`, and machine modules
 - [Athenaeum watcher runbook](docs/athenaeum-watcher.md) — health checks, logs, smoke test, and troubleshooting for the corpus watcher
+- [Agora integration](docs/agora-integration.md) — how `opencode.nix` /
+  `claude.nix` consume agora's apm-native content, and how that relates to
+  colleagues installing the same content via `apm`

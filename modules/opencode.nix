@@ -22,37 +22,33 @@ let
   aiCodingRepo = "${aiCodingPkg}";
 
   # ── Auto-discover agents ────────────────────────────────────────────────────
-  # Every .md file in agora's agents/ is deployed as a nix-store copy.
-  # Adding a new agent: drop <name>.md in agora/agents/, git add, switch.
-  agentFiles = builtins.readDir (opencodeDir + "/agents");
+  # Agora's OpenCode agents now live under the apm-native .apm/agents/
+  # layout (agora migrated to apm packages — see agora/docs/architecture.md).
+  # Files are named <name>.agent.md there (apm's agent primitive convention);
+  # OpenCode itself expects a plain <name>.md, so the suffix is rewritten on
+  # deploy. Adding a new agent: drop <name>.agent.md in agora/.apm/agents/,
+  # git add, switch.
+  agentFiles = builtins.readDir (opencodeDir + "/.apm/agents");
   agentEntries = lib.mapAttrs' (name: _:
     lib.nameValuePair
-      ".config/opencode/agents/${name}"
-      { source = opencodeDir + "/agents/${name}"; }
-  ) (lib.filterAttrs (n: t: t == "regular" && lib.hasSuffix ".md" n) agentFiles);
+      ".config/opencode/agents/${lib.removeSuffix ".agent.md" name}.md"
+      { source = opencodeDir + "/.apm/agents/${name}"; }
+  ) (lib.filterAttrs (n: t: t == "regular" && lib.hasSuffix ".agent.md" n) agentFiles);
 
   # ── Auto-discover skills ────────────────────────────────────────────────────
-  # Every subdirectory of agora's skills/ is expected to contain a SKILL.md.
-  # Adding a new skill: create agora/skills/<name>/SKILL.md, git add, switch.
-  skillDirs = builtins.readDir (opencodeDir + "/skills");
+  # Every subdirectory of agora's .apm/skills/ is expected to contain a
+  # SKILL.md. This now includes what used to be the separate
+  # clients/opencode/native/ tree (e.g. context-audit) — apm has no concept
+  # of a client-native skill subdirectory, so agora folded it into the same
+  # .apm/skills/ namespace during the apm migration; there is nothing
+  # client-specific left to discover separately here.
+  # Adding a new skill: create agora/.apm/skills/<name>/SKILL.md, git add, switch.
+  skillDirs = builtins.readDir (opencodeDir + "/.apm/skills");
   skillEntries = lib.mapAttrs' (name: _:
     lib.nameValuePair
       ".config/opencode/skills/${name}/SKILL.md"
-      { source = opencodeDir + "/skills/${name}/SKILL.md"; }
+      { source = opencodeDir + "/.apm/skills/${name}/SKILL.md"; }
   ) (lib.filterAttrs (_: t: t == "directory") skillDirs);
-
-  # ── Auto-discover opencode-native skills ────────────────────────────────────
-  # Client-native opencode-only skills live in agora's clients/opencode/native/
-  # (bypass the LLM renderer entirely — opencode IS the source format).
-  # Deployed identically to shared skills, into the same
-  # ~/.config/opencode/skills/ namespace.
-  # Adding a new native skill: create agora/clients/opencode/native/<name>/SKILL.md, git add, switch.
-  nativeSkillDirs = builtins.readDir (opencodeDir + "/clients/opencode/native");
-  nativeSkillEntries = lib.mapAttrs' (name: _:
-    lib.nameValuePair
-      ".config/opencode/skills/${name}/SKILL.md"
-      { source = opencodeDir + "/clients/opencode/native/${name}/SKILL.md"; }
-  ) (lib.filterAttrs (_: t: t == "directory") nativeSkillDirs);
 
   # ── Auto-discover commands ──────────────────────────────────────────────────
   # Every .md file in agora's commands/ is deployed as a nix-store copy.
@@ -97,12 +93,43 @@ let
         executable = true; }
   ) (lib.filterAttrs (_: t: t == "regular") binFiles);
 
+  # ── Strip apm instruction frontmatter ────────────────────────────────────────
+  # Agora's AGENTS.md is now authored as an apm `instructions` primitive
+  # (agora/.apm/instructions/agents.instructions.md), which requires a
+  # frontmatter block (`description:`) so `apm compile` can fold it into
+  # colleagues' AGENTS.md. That frontmatter is meaningless to OpenCode's own
+  # AGENTS.md reader, so it is stripped here before deploy — a pure
+  # string-processing step (no derivation), keeping this file plain-text
+  # content the same way it always was on Jan's machines.
+  #
+  # Frontmatter is a leading `---` line, everything up to the next `---`
+  # line, then a blank separator line — stripped by dropping every line up
+  # to and including that second `---`, plus one following blank line.
+  stripFrontmatter = path:
+    let
+      lines = lib.splitString "\n" (builtins.readFile path);
+      afterFirst = lib.lists.drop 1 lines;
+      closeIdx = lib.lists.findFirstIndex (l: l == "---") null afterFirst;
+      afterClose = if closeIdx == null
+        then lines
+        else lib.lists.drop (closeIdx + 1) afterFirst;
+      withoutLeadingBlank =
+        if afterClose != [ ] && builtins.head afterClose == ""
+        then lib.lists.drop 1 afterClose
+        else afterClose;
+    in
+    if builtins.head lines == "---"
+    then lib.concatStringsSep "\n" withoutLeadingBlank
+    else builtins.readFile path;
+
 in
 {
   # ── Dotfiles ────────────────────────────────────────────────────────────────
   home.file = {
-    # Global agent instructions — nix-store copy.
-    ".config/opencode/AGENTS.md".source = opencodeDir + "/AGENTS.md";
+    # Global agent instructions — sourced from agora's apm instruction
+    # primitive with its frontmatter stripped (see stripFrontmatter above).
+    ".config/opencode/AGENTS.md".text =
+      stripFrontmatter (opencodeDir + "/.apm/instructions/agents.instructions.md");
 
     # OpenCode config — sourced from the pinned ai-coding Nix store path.
     # To update: nix flake update ai-coding && home-manager switch.
@@ -118,7 +145,6 @@ in
   }
   // agentEntries
   // skillEntries
-  // nativeSkillEntries
   // commandEntries
   // toolEntries
   // binEntries;
