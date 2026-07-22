@@ -18,6 +18,7 @@ modules/
   common.nix                       # Universal: programs, fonts, nvim symlinks, bootstrapNvim
   opencode.nix                     # OpenCode: auto-discovery, activation, session vars
   athenaeum.nix                    # Resolves store-built athenaeum-mcp binary; exposes dataDir option; registers MCP server + agent scoping
+  dev-tools.nix                    # Shared gh (programs.gh) + apm-cli (pinned GitHub Release binary); imported by oryp6 + M1 + M5 only
   sccache.nix                      # Local-only sccache compiler cache: RUSTC_WRAPPER + CARGO_INCREMENTAL=0
   linux.nix                        # Linux-only: nixGL wrapper (opt-in), .desktop file
   darwin.nix                       # macOS-only: placeholder for Darwin-specific config
@@ -68,6 +69,14 @@ inside `nix develop` shells, through a local on-disk cache) and
 incremental compilation). Storage is local-disk only; no cloud backend is
 configured. C/C++ launcher integration (`CMAKE_*_COMPILER_LAUNCHER`, autotools
 `CC`/`CXX`) and future CUDA `nvcc` caching are left to per-project configuration.
+
+`dev-tools.nix` is imported only by the three primary machines (oryp6, M1, M5) —
+not the `parallels*` test beds. It enables `programs.gh` and installs `apm`
+(Microsoft's Agent Package Manager) from a hash-pinned GitHub Release binary via
+`fetchurl`. The binary is a prebuilt PyInstaller bundle with no `autoPatchelfHook`
+step, because all three targets are FHS/macOS (oryp6 is Pop!_OS with glibc >= 2.35;
+M1/M5 are macOS) and run it directly against the host dynamic loader; that hook
+would only be needed if a target ever migrated to NixOS.
 
 Machine identity (`home.username`, `home.homeDirectory`, `home.stateVersion`) is
 injected by the `mkHome` helper in `flake.nix` from the machine metadata file —
@@ -253,6 +262,8 @@ home.packages = with pkgs; [
 | `watchexec` | Package | `modules/athenaeum.nix` | Cross-platform file watcher; drives the corpus reingest; oryp6 + M1 + M5 |
 | `athenaeum-watch` | `systemd.user.services` (Linux) / `launchd.agents` (Darwin) | `modules/machines/{oryp6,m1,m5}.nix` | Watches `~/Documents/corpus`; runs `athenaeum-ingest` on change |
 | `cerebrum` | MCP server (via `cerebrum-wrapped`) | `modules/cerebrum.nix` | Two-tier agent memory (Synapse + Cortex); all machines; all agents; lazy Ollama startup |
+| `gh` | Program (`programs.gh`) | `modules/dev-tools.nix` | GitHub CLI; oryp6 + M1 + M5 |
+| `apm` | Package (`apm-cli`) | `modules/dev-tools.nix` | Microsoft Agent Package Manager; prebuilt GitHub Release binary pinned to v0.26.0; oryp6 + M1 + M5 |
 
 ---
 
