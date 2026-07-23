@@ -8,11 +8,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1784710109,
-        "narHash": "sha256-Wzg6CoD0PQs2LdPsLBbi/L++vP4bT3yaEc+Oytl9S1M=",
+        "lastModified": 1784832685,
+        "narHash": "sha256-goh4Ue/lIcFC2xNNE4nyg0fW/tVjsnaq2SzHxOgl3ME=",
         "owner": "vansweej",
         "repo": "agora",
-        "rev": "030fc5ed03df2a122a073677535df13bec883333",
+        "rev": "8185018649a5a8b3692e376a430f63ba834a80f8",
         "type": "github"
       },
       "original": {
