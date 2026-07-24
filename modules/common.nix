@@ -96,6 +96,13 @@
     # Lock in legacy defaults; revisit when dropping Ruby/Python3 providers.
     withRuby = true;
     withPython3 = true;
+    # As of home-manager 32de400 (2026-07 nixpkgs bump), programs.neovim
+    # started writing its (empty) generated initLua straight to
+    # ~/.config/nvim/init.lua, clobbering the unmanaged LazyVim bootstrap
+    # file at that same path (see bootstrapNvim below). sideloadInitLua
+    # loads the generated config via wrapper args instead of writing it to
+    # disk, so the LazyVim-managed init.lua stays untouched.
+    sideloadInitLua = true;
   };
 
   # Let Home Manager install and manage itself.
