@@ -192,7 +192,7 @@ in
           return 0
         fi
         # Install and write stamp only on success
-        if $DRY_RUN_CMD ${pkgs.bun}/bin/bun install --cwd "$dir"; then
+        if $DRY_RUN_CMD env LD_LIBRARY_PATH="${pkgs.stdenv.cc.cc.lib}/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" ${pkgs.bun}/bin/bun install --cwd "$dir"; then
           echo "$lockHash" > "$stamp"
         fi
       }
