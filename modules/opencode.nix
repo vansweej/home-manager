@@ -1,4 +1,4 @@
-{ pkgs, lib, config, inputs, meta, ... }:
+{ lib, inputs, meta, ... }:
 
 let
   # The authored agents/skills/commands/bin/AGENTS.md/package.json content
@@ -134,14 +134,6 @@ in
     # OpenCode config — sourced from the pinned ai-coding Nix store path.
     # To update: nix flake update ai-coding && home-manager switch.
     ".config/opencode/opencode.json".source = "${aiCodingPkg}/opencode.json";
-
-    # Tool dependencies — nix-store copy. Provides @opencode-ai/plugin to the
-    # tools symlinked into ~/.config/opencode/tools/. bun install runs against
-    # this directory in the installAiCodingDeps activation step.
-    # NOTE: if ~/.config/opencode/package.json already exists as a plain file,
-    # remove it before running home-manager switch:
-    #   rm ~/.config/opencode/package.json
-    ".config/opencode/package.json".source = opencodeDir + "/package.json";
   }
   // agentEntries
   // skillEntries
@@ -162,40 +154,4 @@ in
     "$HOME/.opencode/bin"
     "$HOME/.local/bin"
   ];
-
-  # ── Activation scripts ──────────────────────────────────────────────────────
-
-  # Install dependencies for ~/.config/opencode/ (@opencode-ai/plugin, consumed
-  # by the tools symlinked into ~/.config/opencode/tools/) and for the agora
-  # dev checkout (bun resolves @opencode-ai/plugin relative to the tool
-  # file's real path via the symlink chain).
-  #
-  # The ai-coding monorepo itself is now a Nix package (no clone or bun install
-  # needed at activation time — node_modules are baked into the store path).
-  #
-  # Uses a bun.lock SHA-256 stamp to skip redundant installs — bun install
-  # only runs when the lockfile has changed since the last successful install.
-  home.activation.installAiCodingDeps =
-    lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      _oc_install() {
-        local dir="$1"
-        # Use bun.lock for change detection when available; fall back to
-        # package.json so a fresh machine with no lockfile still installs.
-        local lockFile="$dir/bun.lock"
-        if [ ! -f "$lockFile" ]; then lockFile="$dir/package.json"; fi
-        if [ ! -f "$lockFile" ]; then return 0; fi
-        local lockHash
-        lockHash=$(${pkgs.coreutils}/bin/sha256sum "$lockFile" | cut -d' ' -f1)
-        local stamp="$dir/node_modules/.hm-install-stamp"
-        # Skip if stamp matches current lockfile hash
-        if [ -f "$stamp" ] && [ "$(cat "$stamp")" = "$lockHash" ]; then
-          return 0
-        fi
-        # Install and write stamp only on success
-        if $DRY_RUN_CMD env LD_LIBRARY_PATH="${pkgs.stdenv.cc.cc.lib}/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" ${pkgs.bun}/bin/bun install --cwd "$dir"; then
-          echo "$lockHash" > "$stamp"
-        fi
-      }
-      _oc_install "$HOME/.config/opencode"
-    '';
 }
