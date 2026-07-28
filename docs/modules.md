@@ -60,14 +60,21 @@ and run `home-manager switch`.
 | Agents | `opencode/agents/` | `*.md` files | Nix store copy |
 | Skills | `opencode/skills/` | Subdirectories (each must contain `SKILL.md`) | Nix store copy |
 | Commands | `opencode/commands/` | `*.md` files | Nix store copy |
-| Tools | `opencode/tools/` | `*.ts` files | `mkOutOfStoreSymlink` → home-manager repo |
+| Tools | `opencode/tools/` | `*.ts` files | Real-file copy, via activation script (from pinned `agora` flake input) |
 | Bin wrappers | `opencode/bin/` | All files | Nix store copy, executable bit set |
 
 **Tool deployment:** Files in `opencode/tools/` are full TypeScript implementations
-deployed as live symlinks pointing to `~/Projects/home-manager/opencode/tools/`.
-Using `mkOutOfStoreSymlink` (rather than a Nix store copy) lets bun resolve
-`node_modules` relative to the file at runtime. The tools delegate to the
-ai-coding monorepo at runtime via subprocess — they do not import code from it.
+copied as **real files** (not symlinks) into `~/.config/opencode/tools/` by the
+`installOpencodeTools` activation script. Bun (like Node) resolves symlinks to
+their realpath before doing `node_modules` resolution for a file's own
+imports, so a tool file that is any kind of symlink into the read-only Nix
+store fails to resolve `@opencode-ai/plugin`. Only a real file living
+directly under `~/.config/opencode/tools/` resolves correctly, walking up to
+`~/.config/opencode/node_modules` (which OpenCode auto-installs itself).
+`home.file` cannot express a non-symlinked destination, hence the dedicated
+activation script rather than an auto-discovered `home.file` entry like the
+other categories. The tools delegate to the ai-coding monorepo at runtime via
+subprocess — they do not import code from it.
 
 ### Dotfiles (`home.file`)
 
@@ -77,12 +84,19 @@ ai-coding monorepo at runtime via subprocess — they do not import code from it
 | `~/.config/opencode/skills/*/SKILL.md` | `opencode/skills/*/SKILL.md` | Store copy (auto-discovered) |
 | `~/.config/opencode/agents/*.md` | `opencode/agents/*.md` | Store copy (auto-discovered) |
 | `~/.config/opencode/commands/*.md` | `opencode/commands/*.md` | Store copy (auto-discovered) |
-| `~/.config/opencode/tools/pipeline.ts` | `~/Projects/home-manager/opencode/tools/pipeline.ts` | Live symlink (auto-discovered) |
-| `~/.config/opencode/tools/skill-retrieval.ts` | `~/Projects/home-manager/opencode/tools/skill-retrieval.ts` | Live symlink (auto-discovered) |
-| `~/.config/opencode/tools/codebase-retrieval.ts` | `~/Projects/home-manager/opencode/tools/codebase-retrieval.ts` | Live symlink (auto-discovered) |
 | `~/.config/opencode/opencode.json` | ai-coding Nix store path (`opencode.json`) | Store copy |
 | `~/.local/bin/codebase-retrieval` | `opencode/bin/codebase-retrieval` | Store copy, executable (auto-discovered) |
 | `~/.local/bin/index-codebase` | `opencode/bin/index-codebase` | Store copy, executable (auto-discovered) |
+
+Tools are **not** `home.file` entries — see the activation scripts section
+below, since `home.file` cannot express a non-symlinked destination and tools
+must be real files (see "Tool deployment" above).
+
+| Destination | Source | Method |
+|---|---|---|
+| `~/.config/opencode/tools/pipeline.ts` | agora `tools/pipeline.ts` | Real-file copy (activation script) |
+| `~/.config/opencode/tools/skill-retrieval.ts` | agora `tools/skill-retrieval.ts` | Real-file copy (activation script) |
+| `~/.config/opencode/tools/codebase-retrieval.ts` | agora `tools/codebase-retrieval.ts` | Real-file copy (activation script) |
 
 ### Session variables
 
@@ -99,21 +113,25 @@ ai-coding monorepo at runtime via subprocess — they do not import code from it
 
 | Script | Trigger | Action |
 |---|---|---|
-| `installAiCodingDeps` | After `writeBoundary` | Installs `@opencode-ai/plugin` in `~/.config/opencode/` and `~/Projects/home-manager/opencode/` with stamp-based skip |
+| `installOpencodeTools` | After `writeBoundary` | Copies agora's `tools/*.ts` into `~/.config/opencode/tools/` as real files; removes stale copies |
 
-#### `installAiCodingDeps` — stamp-based install
+#### `installOpencodeTools` — real-file copy, not a symlink
 
-Runs `bun install` in `~/.config/opencode/` (provides `@opencode-ai/plugin` to the
-OpenCode tools symlinked there) and `~/Projects/home-manager/opencode/` (same
-dependency, resolved via the symlink chain at runtime).
+Tools must be real files under `~/.config/opencode/tools/` — see "Tool
+deployment" above for why. The script `cp -f`s each `agora/tools/*.ts` into
+place and `chmod u+w`s it (the source is a read-only Nix store file); it also
+removes any previously-copied tool whose source file no longer exists in
+agora, since these are real files outside `home.file` and home-manager's own
+generation cleanup never reaches them. It is idempotent and cheap (plain text
+file copies, no dependency install).
+
+OpenCode auto-installs its own `@opencode-ai/plugin` dependency into
+`~/.config/opencode/node_modules` on first launch (see its own
+dependency-resolution logic), so home-manager runs no `bun install` step for
+it.
 
 The ai-coding monorepo itself is a Nix package — `node_modules` are baked into the
 store at build time. No `bun install` is needed for it at activation.
-
-A SHA-256 hash of `bun.lock` is stored in `node_modules/.hm-install-stamp`.
-On subsequent switches the stamp is compared to the current lockfile — if they
-match, install is skipped. The stamp is written **only on success**, so a failed
-install leaves no stamp and is retried on the next switch.
 
 ---
 

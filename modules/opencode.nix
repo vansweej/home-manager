@@ -1,4 +1,4 @@
-{ pkgs, lib, config, inputs, meta, ... }:
+{ pkgs, lib, inputs, meta, ... }:
 
 let
   # The authored agents/skills/commands/bin/AGENTS.md/package.json content
@@ -9,11 +9,6 @@ let
   # requiring an x86_64-linux builder on darwin hosts for the oryp6 config.
   # To update: nix flake update agora && home-manager switch.
   opencodeDir = inputs.agora;
-
-  # tools/*.ts are deployed as live mkOutOfStoreSymlinks (not nix-store
-  # copies — see toolEntries below), pointing at the agora dev checkout on
-  # disk so edits are picked up without a home-manager switch.
-  toolsDevDir = "${config.home.homeDirectory}/Projects/agora/tools";
 
   # The ai-coding Nix package: full source tree + node_modules, built offline
   # from the pinned flake input. Read-only in the store; bun run works fine
@@ -61,22 +56,29 @@ let
   ) (lib.filterAttrs (n: t: t == "regular" && lib.hasSuffix ".md" n) commandFiles);
 
   # ── Auto-discover tools ─────────────────────────────────────────────────────
-  # Every .ts file in agora's tools/ is deployed as a live symlink pointing
-  # back into the agora dev checkout. Tools use mkOutOfStoreSymlink so bun can
-  # resolve node_modules from ~/.config/opencode/ at runtime.
+  # Every .ts file in agora's tools/ must be deployed as a REAL FILE (not a
+  # symlink of any kind) under ~/.config/opencode/tools/ — verified
+  # empirically. OpenCode discovers tools by globbing `{tool,tools}/*.ts`
+  # relative to each config directory, then `import()`s them; Bun (like
+  # Node) resolves symlinks to their realpath BEFORE doing `node_modules`
+  # resolution, so a symlink pointing into the read-only Nix store (whether
+  # a plain store symlink or the old out-of-store mkOutOfStoreSymlink into a
+  # dev checkout) fails with "Cannot find module '@opencode-ai/plugin'"
+  # unless that realpath's own directory tree happens to contain
+  # node_modules. Only a real file living directly under
+  # ~/.config/opencode/tools/ resolves correctly, walking up to
+  # ~/.config/opencode/node_modules (which OpenCode auto-installs itself —
+  # see config/config.ts).
   #
-  # The source of truth for tool code is agora/tools/ (dev checkout at
-  # ~/Projects/agora). bun install runs in ~/.config/opencode/ (see
-  # installAiCodingDeps below) to provide the @opencode-ai/plugin dependency.
+  # `home.file` cannot produce a real (non-symlinked) file — every entry
+  # ends up as a symlink into the Nix store, directly or via an
+  # intermediate home-manager-files derivation. So tools are copied by a
+  # dedicated activation script (installOpencodeTools below) instead of
+  # being declared in home.file. Editing a tool still requires a commit to
+  # agora + `nix flake update agora` + `home-manager switch` (same as
+  # agents/skills) — there is no live edit-in-place.
   #
   # Adding a new tool: drop <name>.ts in agora/tools/, git add, switch.
-  toolFiles = builtins.readDir (opencodeDir + "/tools");
-  toolEntries = lib.mapAttrs' (name: _:
-    lib.nameValuePair
-      ".config/opencode/tools/${name}"
-      { source = config.lib.file.mkOutOfStoreSymlink
-          "${toolsDevDir}/${name}"; }
-  ) (lib.filterAttrs (n: t: t == "regular" && lib.hasSuffix ".ts" n) toolFiles);
 
   # ── Auto-discover CLI wrapper scripts ───────────────────────────────────────
   # Every file in agora's bin/ is deployed to ~/.local/bin/ as a nix-store
@@ -134,19 +136,10 @@ in
     # OpenCode config — sourced from the pinned ai-coding Nix store path.
     # To update: nix flake update ai-coding && home-manager switch.
     ".config/opencode/opencode.json".source = "${aiCodingPkg}/opencode.json";
-
-    # Tool dependencies — nix-store copy. Provides @opencode-ai/plugin to the
-    # tools symlinked into ~/.config/opencode/tools/. bun install runs against
-    # this directory in the installAiCodingDeps activation step.
-    # NOTE: if ~/.config/opencode/package.json already exists as a plain file,
-    # remove it before running home-manager switch:
-    #   rm ~/.config/opencode/package.json
-    ".config/opencode/package.json".source = opencodeDir + "/package.json";
   }
   // agentEntries
   // skillEntries
   // commandEntries
-  // toolEntries
   // binEntries;
 
   # ── Environment ─────────────────────────────────────────────────────────────
@@ -165,38 +158,30 @@ in
 
   # ── Activation scripts ──────────────────────────────────────────────────────
 
-  # Install dependencies for ~/.config/opencode/ (@opencode-ai/plugin, consumed
-  # by the tools symlinked into ~/.config/opencode/tools/) and for the agora
-  # dev checkout (bun resolves @opencode-ai/plugin relative to the tool
-  # file's real path via the symlink chain).
-  #
-  # The ai-coding monorepo itself is now a Nix package (no clone or bun install
-  # needed at activation time — node_modules are baked into the store path).
-  #
-  # Uses a bun.lock SHA-256 stamp to skip redundant installs — bun install
-  # only runs when the lockfile has changed since the last successful install.
-  home.activation.installAiCodingDeps =
+  # Copy agora's tools/*.ts into ~/.config/opencode/tools/ as REAL files
+  # (see the "Auto-discover tools" comment above for why this can't be a
+  # home.file symlink). Idempotent: re-copies every switch (cheap, plain
+  # text files) and removes any previously-copied tool whose source file no
+  # longer exists in agora — these are real files outside home.file, so
+  # home-manager's own generation cleanup never reaches them.
+  home.activation.installOpencodeTools =
     lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      _oc_install() {
-        local dir="$1"
-        # Use bun.lock for change detection when available; fall back to
-        # package.json so a fresh machine with no lockfile still installs.
-        local lockFile="$dir/bun.lock"
-        if [ ! -f "$lockFile" ]; then lockFile="$dir/package.json"; fi
-        if [ ! -f "$lockFile" ]; then return 0; fi
-        local lockHash
-        lockHash=$(${pkgs.coreutils}/bin/sha256sum "$lockFile" | cut -d' ' -f1)
-        local stamp="$dir/node_modules/.hm-install-stamp"
-        # Skip if stamp matches current lockfile hash
-        if [ -f "$stamp" ] && [ "$(cat "$stamp")" = "$lockHash" ]; then
-          return 0
+      toolsDir="$HOME/.config/opencode/tools"
+      $DRY_RUN_CMD ${pkgs.coreutils}/bin/mkdir -p "$toolsDir"
+
+      for existing in "$toolsDir"/*.ts; do
+        [ -e "$existing" ] || continue
+        name=$(${pkgs.coreutils}/bin/basename "$existing")
+        if [ ! -e "${opencodeDir}/tools/$name" ]; then
+          $DRY_RUN_CMD ${pkgs.coreutils}/bin/rm -f "$existing"
         fi
-        # Install and write stamp only on success
-        if $DRY_RUN_CMD env LD_LIBRARY_PATH="${pkgs.stdenv.cc.cc.lib}/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" ${pkgs.bun}/bin/bun install --cwd "$dir"; then
-          echo "$lockHash" > "$stamp"
-        fi
-      }
-      _oc_install "$HOME/.config/opencode"
-      _oc_install "$HOME/Projects/agora"
+      done
+
+      for src in ${opencodeDir}/tools/*.ts; do
+        [ -e "$src" ] || continue
+        name=$(${pkgs.coreutils}/bin/basename "$src")
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/cp -f "$src" "$toolsDir/$name"
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/chmod u+w "$toolsDir/$name"
+      done
     '';
 }

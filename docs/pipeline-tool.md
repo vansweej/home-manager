@@ -225,12 +225,24 @@ This allows the tool to inspect the exit code and return a user-friendly message
 
 ## Deployment
 
-The tool is deployed as an out-of-store symlink to `~/Projects/home-manager/opencode/tools/pipeline.ts` via `mkOutOfStoreSymlink` in `modules/opencode.nix`. This allows bun to resolve `node_modules` relative to the file.
+The tool is deployed as a **real file copy** of agora's `tools/pipeline.ts`
+(from the pinned `agora` flake input) into `~/.config/opencode/tools/`, via
+the `installOpencodeTools` activation script in `modules/opencode.nix` — not
+a symlink. Bun (like Node) resolves symlinks to their realpath before doing
+`node_modules` resolution for a file's own imports, so a tool file that is
+any kind of symlink into the read-only Nix store fails to resolve
+`@opencode-ai/plugin` (there's no `node_modules` in the store). A real file
+living directly under `~/.config/opencode/tools/` resolves correctly by
+walking up to `~/.config/opencode/node_modules`, which OpenCode auto-installs
+itself on launch.
 
-**Live updates:** Edits to the tool file are picked up immediately without `home-manager switch`. However, schema changes require reloading OpenCode so the new args are recognized.
+**Updating the tool:** since it now comes from the pinned flake input, an edit
+requires a commit to `agora`, then `nix flake update agora && home-manager
+switch` in this repo (same workflow as agents/skills). There is no live
+edit-in-place.
 
 ## Related Documentation
 
-- **Architecture:** See [`docs/architecture.md`](./architecture.md) for details on tool deployment and the out-of-store symlink pattern.
+- **Architecture:** See [`docs/architecture.md`](./architecture.md) for details on tool deployment.
 - **Monorepo:** The pipeline CLI is defined in the `ai-coding` repository (`github:vansweej/ai-coding`).
 - **Plan Format:** See the `plan` skill in OpenCode for guidance on writing multi-phase plans.
