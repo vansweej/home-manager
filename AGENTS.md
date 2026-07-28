@@ -376,7 +376,7 @@ The `opencode/` directory mirrors the XDG deployment target exactly:
 | `opencode/skills/<name>/SKILL.md` | `~/.config/opencode/skills/<name>/SKILL.md` |
 | `opencode/agents/<name>.md` | `~/.config/opencode/agents/<name>.md` |
 | `opencode/commands/<name>.md` | `~/.config/opencode/commands/<name>.md` |
-| `opencode/tools/<name>.ts` | `~/.config/opencode/tools/<name>.ts` → symlink to `~/Projects/home-manager/opencode/tools/` |
+| `opencode/tools/<name>.ts` | `~/.config/opencode/tools/<name>.ts` → nix-store symlink (from pinned `agora` flake input) |
 | `opencode/bin/<name>` | `~/.local/bin/<name>` (executable, nix-store copy) |
 
 All four categories are **auto-discovered** by `modules/opencode.nix` using
@@ -403,27 +403,31 @@ git add opencode/commands/my-command.md
 
 ### Adding a new OpenCode tool
 
-Tools are full TypeScript implementations that live in `opencode/tools/` in this
-repo. They are deployed as live symlinks to `~/Projects/home-manager/opencode/tools/`
-via `mkOutOfStoreSymlink`, so bun can resolve `node_modules` relative to the file
-at runtime. At runtime, tools delegate to the ai-coding monorepo via subprocess
-(`bun run --cwd $AI_CODING_MONOREPO <script>`).
+Tools are full TypeScript implementations that live in agora's `tools/`
+directory (a separate repo, `github:vansweej/agora`, pinned as a flake input
+here). They are deployed as plain nix-store symlinks, the same mechanism as
+commands and bin wrappers — not `mkOutOfStoreSymlink`. OpenCode discovers
+tools by globbing `{tool,tools}/*.ts` relative to `~/.config/opencode`
+(following symlinks) and imports them by that config-dir path, then
+auto-installs `@opencode-ai/plugin` into that directory's own `node_modules`
+itself — so the symlink's target location doesn't affect dependency
+resolution. At runtime, tools delegate to the ai-coding monorepo via
+subprocess (`bun run --cwd $AI_CODING_MONOREPO <script>`).
 
-**Developer workflow (Nix):**
-1. Implement the tool in `opencode/tools/<name>.ts` in this repo
-2. `git add opencode/tools/<name>.ts` and `home-manager switch`
-3. The tool is live immediately — `mkOutOfStoreSymlink` means edits to the file
-   are picked up without re-running switch
+**Developer workflow:**
+1. Implement the tool in `tools/<name>.ts` in the `agora` repo
+2. Commit and push in `agora`
+3. In this repo: `nix flake update agora && home-manager switch`
+
+There is no live edit-in-place for tools (unlike agora agents/skills, this
+was previously possible via `mkOutOfStoreSymlink` into a dev checkout, but
+that required agora to be checked out at `~/Projects/agora` on every machine
+running `home-manager switch` — traded away for a checkout-free deployment).
 
 **When the tool shells out to ai-coding:**
 - Edit the underlying script in the ai-coding repo
 - Push to a branch, `nix flake update ai-coding` in home-manager, `home-manager switch`
 - Or point `AI_CODING_MONOREPO` at a local clone temporarily for fast iteration
-
-At runtime, `~/.config/opencode/tools/<name>.ts` is a live symlink to
-`~/Projects/home-manager/opencode/tools/<name>.ts`, so bun resolves
-`node_modules` from `~/.config/opencode/` (where `@opencode-ai/plugin` is installed
-by the `installAiCodingDeps` activation script).
 
 ---
 

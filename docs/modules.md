@@ -60,14 +60,17 @@ and run `home-manager switch`.
 | Agents | `opencode/agents/` | `*.md` files | Nix store copy |
 | Skills | `opencode/skills/` | Subdirectories (each must contain `SKILL.md`) | Nix store copy |
 | Commands | `opencode/commands/` | `*.md` files | Nix store copy |
-| Tools | `opencode/tools/` | `*.ts` files | `mkOutOfStoreSymlink` → home-manager repo |
+| Tools | `opencode/tools/` | `*.ts` files | Nix store symlink (from pinned `agora` flake input) |
 | Bin wrappers | `opencode/bin/` | All files | Nix store copy, executable bit set |
 
 **Tool deployment:** Files in `opencode/tools/` are full TypeScript implementations
-deployed as live symlinks pointing to `~/Projects/home-manager/opencode/tools/`.
-Using `mkOutOfStoreSymlink` (rather than a Nix store copy) lets bun resolve
-`node_modules` relative to the file at runtime. The tools delegate to the
-ai-coding monorepo at runtime via subprocess — they do not import code from it.
+deployed as nix-store symlinks, the same mechanism as commands and bin wrappers.
+OpenCode discovers tools by globbing `{tool,tools}/*.ts` relative to
+`~/.config/opencode` (following symlinks) and imports them by that config-dir
+path, then auto-installs `@opencode-ai/plugin` into that same directory's own
+`node_modules` — so the symlink's target location is irrelevant to dependency
+resolution. The tools delegate to the ai-coding monorepo at runtime via
+subprocess — they do not import code from it.
 
 ### Dotfiles (`home.file`)
 
@@ -77,9 +80,9 @@ ai-coding monorepo at runtime via subprocess — they do not import code from it
 | `~/.config/opencode/skills/*/SKILL.md` | `opencode/skills/*/SKILL.md` | Store copy (auto-discovered) |
 | `~/.config/opencode/agents/*.md` | `opencode/agents/*.md` | Store copy (auto-discovered) |
 | `~/.config/opencode/commands/*.md` | `opencode/commands/*.md` | Store copy (auto-discovered) |
-| `~/.config/opencode/tools/pipeline.ts` | `~/Projects/home-manager/opencode/tools/pipeline.ts` | Live symlink (auto-discovered) |
-| `~/.config/opencode/tools/skill-retrieval.ts` | `~/Projects/home-manager/opencode/tools/skill-retrieval.ts` | Live symlink (auto-discovered) |
-| `~/.config/opencode/tools/codebase-retrieval.ts` | `~/Projects/home-manager/opencode/tools/codebase-retrieval.ts` | Live symlink (auto-discovered) |
+| `~/.config/opencode/tools/pipeline.ts` | agora `tools/pipeline.ts` | Store symlink (auto-discovered) |
+| `~/.config/opencode/tools/skill-retrieval.ts` | agora `tools/skill-retrieval.ts` | Store symlink (auto-discovered) |
+| `~/.config/opencode/tools/codebase-retrieval.ts` | agora `tools/codebase-retrieval.ts` | Store symlink (auto-discovered) |
 | `~/.config/opencode/opencode.json` | ai-coding Nix store path (`opencode.json`) | Store copy |
 | `~/.local/bin/codebase-retrieval` | `opencode/bin/codebase-retrieval` | Store copy, executable (auto-discovered) |
 | `~/.local/bin/index-codebase` | `opencode/bin/index-codebase` | Store copy, executable (auto-discovered) |
@@ -97,23 +100,14 @@ ai-coding monorepo at runtime via subprocess — they do not import code from it
 
 ### Activation scripts
 
-| Script | Trigger | Action |
-|---|---|---|
-| `installAiCodingDeps` | After `writeBoundary` | Installs `@opencode-ai/plugin` in `~/.config/opencode/` and `~/Projects/home-manager/opencode/` with stamp-based skip |
-
-#### `installAiCodingDeps` — stamp-based install
-
-Runs `bun install` in `~/.config/opencode/` (provides `@opencode-ai/plugin` to the
-OpenCode tools symlinked there) and `~/Projects/home-manager/opencode/` (same
-dependency, resolved via the symlink chain at runtime).
+No `opencode.nix`-specific activation script exists. OpenCode auto-installs its
+own `@opencode-ai/plugin` dependency into `~/.config/opencode/node_modules` on
+first launch (see its own dependency-resolution logic), so home-manager no
+longer runs a `bun install` step for it — this was removed together with the
+switch to nix-store symlinks for tools (see `docs/architecture.md`).
 
 The ai-coding monorepo itself is a Nix package — `node_modules` are baked into the
 store at build time. No `bun install` is needed for it at activation.
-
-A SHA-256 hash of `bun.lock` is stored in `node_modules/.hm-install-stamp`.
-On subsequent switches the stamp is compared to the current lockfile — if they
-match, install is skipped. The stamp is written **only on success**, so a failed
-install leaves no stamp and is retried on the next switch.
 
 ---
 
