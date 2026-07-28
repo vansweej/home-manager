@@ -120,11 +120,11 @@
         "rust-overlay": "rust-overlay_3"
       },
       "locked": {
-        "lastModified": 1785275691,
-        "narHash": "sha256-OMuPMWTw4uRzsBCf8V2W8yO8jq3tvsnZP5xkQv5bvfM=",
+        "lastModified": 1785279741,
+        "narHash": "sha256-WUSnYpA9teBvmcqY6CuXkXyToRkfQZpcR2GSCupUDJw=",
         "owner": "vansweej",
         "repo": "choragos",
-        "rev": "1d743ade63e9558ed62287331402151a7ca708e5",
+        "rev": "cb2b785315661cbbc069471db9bf59d93cc14611",
         "type": "github"
       },
       "original": {
