@@ -1,4 +1,4 @@
-{ lib, inputs, meta, ... }:
+{ pkgs, lib, inputs, meta, ... }:
 
 let
   # The authored agents/skills/commands/bin/AGENTS.md/package.json content
@@ -56,27 +56,29 @@ let
   ) (lib.filterAttrs (n: t: t == "regular" && lib.hasSuffix ".md" n) commandFiles);
 
   # ── Auto-discover tools ─────────────────────────────────────────────────────
-  # Every .ts file in agora's tools/ is deployed as a nix-store symlink, same
-  # as commands/bin below — no on-disk agora checkout required on any
-  # machine. OpenCode discovers tools by globbing `{tool,tools}/*.{js,ts}`
-  # relative to each config directory (following symlinks) and imports them
-  # by that config-dir path, not by the symlink's realpath target; it then
-  # auto-installs `@opencode-ai/plugin` into that same config directory's
-  # own `node_modules` (see OpenCode's tool/registry.ts + config/config.ts).
-  # So the tool file's on-disk location is irrelevant to dependency
-  # resolution — a store symlink resolves identically to a dev-checkout one.
+  # Every .ts file in agora's tools/ must be deployed as a REAL FILE (not a
+  # symlink of any kind) under ~/.config/opencode/tools/ — verified
+  # empirically. OpenCode discovers tools by globbing `{tool,tools}/*.ts`
+  # relative to each config directory, then `import()`s them; Bun (like
+  # Node) resolves symlinks to their realpath BEFORE doing `node_modules`
+  # resolution, so a symlink pointing into the read-only Nix store (whether
+  # a plain store symlink or the old out-of-store mkOutOfStoreSymlink into a
+  # dev checkout) fails with "Cannot find module '@opencode-ai/plugin'"
+  # unless that realpath's own directory tree happens to contain
+  # node_modules. Only a real file living directly under
+  # ~/.config/opencode/tools/ resolves correctly, walking up to
+  # ~/.config/opencode/node_modules (which OpenCode auto-installs itself —
+  # see config/config.ts).
   #
-  # Trade-off: editing a tool now requires a commit to agora + `nix flake
-  # update agora` + `home-manager switch` (same as agents/skills), not a
-  # live edit-in-place.
+  # `home.file` cannot produce a real (non-symlinked) file — every entry
+  # ends up as a symlink into the Nix store, directly or via an
+  # intermediate home-manager-files derivation. So tools are copied by a
+  # dedicated activation script (installOpencodeTools below) instead of
+  # being declared in home.file. Editing a tool still requires a commit to
+  # agora + `nix flake update agora` + `home-manager switch` (same as
+  # agents/skills) — there is no live edit-in-place.
   #
   # Adding a new tool: drop <name>.ts in agora/tools/, git add, switch.
-  toolFiles = builtins.readDir (opencodeDir + "/tools");
-  toolEntries = lib.mapAttrs' (name: _:
-    lib.nameValuePair
-      ".config/opencode/tools/${name}"
-      { source = opencodeDir + "/tools/${name}"; }
-  ) (lib.filterAttrs (n: t: t == "regular" && lib.hasSuffix ".ts" n) toolFiles);
 
   # ── Auto-discover CLI wrapper scripts ───────────────────────────────────────
   # Every file in agora's bin/ is deployed to ~/.local/bin/ as a nix-store
@@ -138,7 +140,6 @@ in
   // agentEntries
   // skillEntries
   // commandEntries
-  // toolEntries
   // binEntries;
 
   # ── Environment ─────────────────────────────────────────────────────────────
@@ -154,4 +155,33 @@ in
     "$HOME/.opencode/bin"
     "$HOME/.local/bin"
   ];
+
+  # ── Activation scripts ──────────────────────────────────────────────────────
+
+  # Copy agora's tools/*.ts into ~/.config/opencode/tools/ as REAL files
+  # (see the "Auto-discover tools" comment above for why this can't be a
+  # home.file symlink). Idempotent: re-copies every switch (cheap, plain
+  # text files) and removes any previously-copied tool whose source file no
+  # longer exists in agora — these are real files outside home.file, so
+  # home-manager's own generation cleanup never reaches them.
+  home.activation.installOpencodeTools =
+    lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      toolsDir="$HOME/.config/opencode/tools"
+      $DRY_RUN_CMD ${pkgs.coreutils}/bin/mkdir -p "$toolsDir"
+
+      for existing in "$toolsDir"/*.ts; do
+        [ -e "$existing" ] || continue
+        name=$(${pkgs.coreutils}/bin/basename "$existing")
+        if [ ! -e "${opencodeDir}/tools/$name" ]; then
+          $DRY_RUN_CMD ${pkgs.coreutils}/bin/rm -f "$existing"
+        fi
+      done
+
+      for src in ${opencodeDir}/tools/*.ts; do
+        [ -e "$src" ] || continue
+        name=$(${pkgs.coreutils}/bin/basename "$src")
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/cp -f "$src" "$toolsDir/$name"
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/chmod u+w "$toolsDir/$name"
+      done
+    '';
 }
