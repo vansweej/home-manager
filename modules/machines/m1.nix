@@ -20,14 +20,16 @@ let
   m1OpencodeConfig = builtins.toJSON (
     lib.recursiveUpdate
       (lib.recursiveUpdate
-        (lib.recursiveUpdate baseConfig config.programs.athenaeum.opencodeOverlay)
-        config.programs.cerebrum.opencodeOverlay)
+        (lib.recursiveUpdate
+          (lib.recursiveUpdate baseConfig config.programs.athenaeum.opencodeOverlay)
+          config.programs.cerebrum.opencodeOverlay)
+        config.programs.choragos.opencodeOverlay)
       modelOverlay
   );
 in
 {
   # M1 MacBook-specific configuration.
-  imports = [ ../athenaeum.nix ../cerebrum.nix ../claude.nix ../dev-tools.nix ];
+  imports = [ ../athenaeum.nix ../cerebrum.nix ../choragos.nix ../claude.nix ../dev-tools.nix ];
 
   # Override the shared opencode.json (deployed by opencode.nix) with a static
   # file that merges the athenaeum MCP overlay onto the upstream config.
