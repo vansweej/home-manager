@@ -10,11 +10,6 @@ let
   # To update: nix flake update agora && home-manager switch.
   opencodeDir = inputs.agora;
 
-  # tools/*.ts are deployed as live mkOutOfStoreSymlinks (not nix-store
-  # copies — see toolEntries below), pointing at the agora dev checkout on
-  # disk so edits are picked up without a home-manager switch.
-  toolsDevDir = "${config.home.homeDirectory}/Projects/agora/tools";
-
   # The ai-coding Nix package: full source tree + node_modules, built offline
   # from the pinned flake input. Read-only in the store; bun run works fine
   # from read-only paths (verified). No git clone or bun install at activation.
@@ -61,21 +56,26 @@ let
   ) (lib.filterAttrs (n: t: t == "regular" && lib.hasSuffix ".md" n) commandFiles);
 
   # ── Auto-discover tools ─────────────────────────────────────────────────────
-  # Every .ts file in agora's tools/ is deployed as a live symlink pointing
-  # back into the agora dev checkout. Tools use mkOutOfStoreSymlink so bun can
-  # resolve node_modules from ~/.config/opencode/ at runtime.
+  # Every .ts file in agora's tools/ is deployed as a nix-store symlink, same
+  # as commands/bin below — no on-disk agora checkout required on any
+  # machine. OpenCode discovers tools by globbing `{tool,tools}/*.{js,ts}`
+  # relative to each config directory (following symlinks) and imports them
+  # by that config-dir path, not by the symlink's realpath target; it then
+  # auto-installs `@opencode-ai/plugin` into that same config directory's
+  # own `node_modules` (see OpenCode's tool/registry.ts + config/config.ts).
+  # So the tool file's on-disk location is irrelevant to dependency
+  # resolution — a store symlink resolves identically to a dev-checkout one.
   #
-  # The source of truth for tool code is agora/tools/ (dev checkout at
-  # ~/Projects/agora). bun install runs in ~/.config/opencode/ (see
-  # installAiCodingDeps below) to provide the @opencode-ai/plugin dependency.
+  # Trade-off: editing a tool now requires a commit to agora + `nix flake
+  # update agora` + `home-manager switch` (same as agents/skills), not a
+  # live edit-in-place.
   #
   # Adding a new tool: drop <name>.ts in agora/tools/, git add, switch.
   toolFiles = builtins.readDir (opencodeDir + "/tools");
   toolEntries = lib.mapAttrs' (name: _:
     lib.nameValuePair
       ".config/opencode/tools/${name}"
-      { source = config.lib.file.mkOutOfStoreSymlink
-          "${toolsDevDir}/${name}"; }
+      { source = opencodeDir + "/tools/${name}"; }
   ) (lib.filterAttrs (n: t: t == "regular" && lib.hasSuffix ".ts" n) toolFiles);
 
   # ── Auto-discover CLI wrapper scripts ───────────────────────────────────────
@@ -197,6 +197,5 @@ in
         fi
       }
       _oc_install "$HOME/.config/opencode"
-      _oc_install "$HOME/Projects/agora"
     '';
 }
