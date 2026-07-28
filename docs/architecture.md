@@ -114,45 +114,62 @@ Key properties:
 
 ## Activation script ordering
 
-One activation script runs on every `home-manager switch`:
+Two activation scripts run on every `home-manager switch`:
 
 | Script | Module | Order | Purpose |
 |---|---|---|---|
 | `bootstrapNvim` | `common.nix` | Before `writeBoundary` | Bootstraps `~/.config/nvim` from LazyVim starter |
+| `installOpencodeTools` | `opencode.nix` | After `writeBoundary` | Copies agora's `tools/*.ts` into `~/.config/opencode/tools/` as real files |
 
 `bootstrapNvim` runs **before** `writeBoundary` — the phase where home-manager
 creates `mkOutOfStoreSymlink` symlinks — so nvim symlinks are never dangling on a
 fresh machine's first activation.
 
-OpenCode's `@opencode-ai/plugin` dependency (needed by the tools deployed to
-`~/.config/opencode/tools/`) is no longer installed by an activation script:
-OpenCode auto-installs it into `~/.config/opencode/node_modules` itself on
-first launch (see its own `config/config.ts`), so no home-manager-side
-`bun install` step or lockfile-hash stamp is needed.
+`installOpencodeTools` runs after `writeBoundary` and `cp`s each tool from the
+pinned `agora` flake input into `~/.config/opencode/tools/` as a genuine
+writable file (not a symlink — see the `mkOutOfStoreSymlink` vs store paths
+section below for why), removing any previously-copied tool whose source no
+longer exists in agora. It is idempotent and cheap (plain text file copies).
+
+OpenCode's `@opencode-ai/plugin` dependency (needed by those tools) is not
+installed by any home-manager activation script: OpenCode auto-installs it
+into `~/.config/opencode/node_modules` itself on first launch (see its own
+`config/config.ts`), so no home-manager-side `bun install` step or
+lockfile-hash stamp is needed.
 
 The ai-coding monorepo itself is a Nix package — `node_modules` are baked into the
 Nix store at build time via a two-phase derivation (FOD cache fetch + pure offline
 install). No clone or `bun install` is needed at activation time.
 
-## `mkOutOfStoreSymlink` vs store paths
+## `mkOutOfStoreSymlink` vs store paths vs real-file copy
 
-Two kinds of file management are used:
+Three kinds of file management are used:
 
 | Method | When used | Behaviour |
 |---|---|---|
-| Store path (`.source = ./path`) | Static files: skills, agents, commands, bin wrappers, tools, `opencode.json` | Copied into Nix store; requires `home-manager switch` to update |
+| Store path (`.source = ./path`) | Static files: skills, agents, commands, bin wrappers, `opencode.json` | Symlinked into Nix store; requires `home-manager switch` to update |
 | `mkOutOfStoreSymlink` | Live files: nvim plugins | Symlinked to the repo path; updates immediately on disk |
+| Activation-script real-file copy | OpenCode tools | Plain file, not a symlink; requires `home-manager switch` to update |
 
 OpenCode tools (`pipeline.ts`, `skill-retrieval.ts`, `codebase-retrieval.ts`) are
-deployed as plain nix-store symlinks from the pinned `agora` flake input, the
-same as commands and bin wrappers — not `mkOutOfStoreSymlink`. OpenCode
-discovers tools by globbing relative to `~/.config/opencode` (following
-symlinks) and imports them by that config-dir path, so the symlink's target
-location doesn't affect `@opencode-ai/plugin` resolution; the tools are full
-implementations that delegate to the ai-coding monorepo at runtime via
-subprocess (`bun run <script> --cwd $AI_CODING_MONOREPO`) rather than importing
-code from it. Editing a tool now requires a commit to `agora` + `nix flake
-update agora` + `home-manager switch`, same as agents/skills — not a live edit.
+deployed as **real files**, copied by the `installOpencodeTools` activation
+script from the pinned `agora` flake input into `~/.config/opencode/tools/` —
+deliberately **not** a symlink of any kind (neither a plain store symlink nor
+`mkOutOfStoreSymlink`). Bun (like Node) resolves symlinks to their realpath
+before doing `node_modules` resolution for a file's own imports; a tool file
+that is a symlink into the read-only Nix store therefore fails to resolve
+`@opencode-ai/plugin` (no `node_modules` exists in the store). Only a real
+file living directly under `~/.config/opencode/tools/` resolves correctly, by
+walking up to `~/.config/opencode/node_modules` (which OpenCode installs
+itself). `home.file` cannot express a non-symlinked destination — every entry
+becomes a symlink, directly or via an intermediate `home-manager-files`
+derivation — which is why tools use a dedicated activation script instead.
+
+The tools are full implementations that delegate to the ai-coding monorepo at
+runtime via subprocess (`bun run <script> --cwd $AI_CODING_MONOREPO`) rather
+than importing code from it. Editing a tool now requires a commit to `agora`
++ `nix flake update agora` + `home-manager switch`, same as agents/skills —
+not a live edit.
 
 See [`docs/pipeline-tool.md`](./pipeline-tool.md) for details on the pipeline tool's
 invocation surfaces, execution flow, and exit-code handling.

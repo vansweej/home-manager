@@ -376,11 +376,14 @@ The `opencode/` directory mirrors the XDG deployment target exactly:
 | `opencode/skills/<name>/SKILL.md` | `~/.config/opencode/skills/<name>/SKILL.md` |
 | `opencode/agents/<name>.md` | `~/.config/opencode/agents/<name>.md` |
 | `opencode/commands/<name>.md` | `~/.config/opencode/commands/<name>.md` |
-| `opencode/tools/<name>.ts` | `~/.config/opencode/tools/<name>.ts` → nix-store symlink (from pinned `agora` flake input) |
+| `opencode/tools/<name>.ts` | `~/.config/opencode/tools/<name>.ts` → real-file copy via activation script (from pinned `agora` flake input) |
 | `opencode/bin/<name>` | `~/.local/bin/<name>` (executable, nix-store copy) |
 
-All four categories are **auto-discovered** by `modules/opencode.nix` using
-`builtins.readDir`. No manual `home.file` entries are needed.
+Agents, skills, commands, and bin wrappers are **auto-discovered** by
+`modules/opencode.nix` using `builtins.readDir` and deployed via `home.file`.
+Tools are also auto-discovered from agora's `tools/` directory, but deployed
+via a dedicated `installOpencodeTools` activation script instead of
+`home.file` — see below for why.
 
 ### Adding a new agent, skill, or command
 
@@ -405,14 +408,18 @@ git add opencode/commands/my-command.md
 
 Tools are full TypeScript implementations that live in agora's `tools/`
 directory (a separate repo, `github:vansweej/agora`, pinned as a flake input
-here). They are deployed as plain nix-store symlinks, the same mechanism as
-commands and bin wrappers — not `mkOutOfStoreSymlink`. OpenCode discovers
-tools by globbing `{tool,tools}/*.ts` relative to `~/.config/opencode`
-(following symlinks) and imports them by that config-dir path, then
-auto-installs `@opencode-ai/plugin` into that directory's own `node_modules`
-itself — so the symlink's target location doesn't affect dependency
-resolution. At runtime, tools delegate to the ai-coding monorepo via
-subprocess (`bun run --cwd $AI_CODING_MONOREPO <script>`).
+here). They are deployed as **real file copies**, by the
+`installOpencodeTools` activation script — deliberately not a symlink of any
+kind (neither a plain store symlink nor `mkOutOfStoreSymlink`). Bun (like
+Node) resolves symlinks to their realpath before doing `node_modules`
+resolution for a file's own imports, so a tool file that is a symlink into
+the read-only Nix store fails to resolve `@opencode-ai/plugin` (no
+`node_modules` exists in the store). Only a real file living directly under
+`~/.config/opencode/tools/` resolves correctly, walking up to
+`~/.config/opencode/node_modules` (which OpenCode installs itself — `home.file`
+cannot express a non-symlinked destination, hence the dedicated activation
+script). At runtime, tools delegate to the ai-coding monorepo via subprocess
+(`bun run --cwd $AI_CODING_MONOREPO <script>`).
 
 **Developer workflow:**
 1. Implement the tool in `tools/<name>.ts` in the `agora` repo

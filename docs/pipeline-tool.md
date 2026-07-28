@@ -225,13 +225,16 @@ This allows the tool to inspect the exit code and return a user-friendly message
 
 ## Deployment
 
-The tool is deployed as a nix-store symlink to agora's `tools/pipeline.ts` (from
-the pinned `agora` flake input) via `modules/opencode.nix`, the same mechanism
-used for commands and bin wrappers. OpenCode discovers tools by globbing
-`{tool,tools}/*.ts` relative to `~/.config/opencode` (following symlinks) and
-imports them by that config-dir path — the symlink's target is irrelevant to
-`@opencode-ai/plugin` resolution, since OpenCode auto-installs that dependency
-into `~/.config/opencode/node_modules` itself.
+The tool is deployed as a **real file copy** of agora's `tools/pipeline.ts`
+(from the pinned `agora` flake input) into `~/.config/opencode/tools/`, via
+the `installOpencodeTools` activation script in `modules/opencode.nix` — not
+a symlink. Bun (like Node) resolves symlinks to their realpath before doing
+`node_modules` resolution for a file's own imports, so a tool file that is
+any kind of symlink into the read-only Nix store fails to resolve
+`@opencode-ai/plugin` (there's no `node_modules` in the store). A real file
+living directly under `~/.config/opencode/tools/` resolves correctly by
+walking up to `~/.config/opencode/node_modules`, which OpenCode auto-installs
+itself on launch.
 
 **Updating the tool:** since it now comes from the pinned flake input, an edit
 requires a commit to `agora`, then `nix flake update agora && home-manager
