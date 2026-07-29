@@ -137,7 +137,7 @@ Details:
 - **`plan`** (optional): Path to a plan file (e.g., `./plan.md`). Resolved to an absolute path before passing to the CLI. If provided, the pipeline executes this plan.
 - **`input`** (optional): Request text describing the task. If provided instead of a plan, the pipeline generates a plan first.
 - **`maxRetries`** (optional): Maximum number of times to retry resumable failures (exit code 2). Defaults to the CLI default if unset.
-- **`profile`** (optional): Model profile to use (`local`, `copilot-default`, or `hybrid`). Defaults to `copilot-default` if unset. Can be overridden by the `AI_CODING_MODEL_PROFILE` environment variable.
+- **`profile`** (optional): Model profile to use (`local`, `copilot-default`, `hybrid`, `anthropic-sonnet`, `bedrock-sonnet`, or `opencode-free`). If unset, the CLI falls back to the `AI_CODING_MODEL_PROFILE` environment variable, and then to its built-in `copilot-default`. On managed machines `AI_CODING_MODEL_PROFILE` is set per host (see "Profile Handling" below).
 
 ### Guard
 
@@ -202,7 +202,7 @@ This ensures the CLI can find the plan file regardless of the current working di
 
 ### Profile Handling
 
-The tool does **not** default the profile argument. If unset, the CLI uses its own default (`copilot-default`) and respects the `AI_CODING_MODEL_PROFILE` environment variable:
+The tool does **not** default the profile argument. If unset, the CLI resolves the profile from the `AI_CODING_MODEL_PROFILE` environment variable, falling back to its built-in `copilot-default`:
 
 ```typescript
 if (args.profile) {
@@ -211,6 +211,20 @@ if (args.profile) {
 // If args.profile is undefined, the flag is not added.
 // The CLI and environment override remain effective.
 ```
+
+On Home Manager–managed machines, `AI_CODING_MODEL_PROFILE` is set per host in
+each machine module, so the effective default is **not** `copilot-default`
+there:
+
+| Machine | `AI_CODING_MODEL_PROFILE` |
+|---|---|
+| oryp6 | `opencode-free` |
+| M1 | `bedrock-sonnet` |
+| M5 | `bedrock-sonnet` |
+
+This mirrors the choragos default (`programs.choragos.defaultProfile`), so the
+`/pipeline` tool and `choragos` agree per machine. An explicit `profile`
+argument (or `--profile` flag) still overrides both.
 
 ### Exit Code Capture
 

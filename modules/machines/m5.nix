@@ -70,6 +70,13 @@ in
     awscli2
   ];
 
+  # M5 defaults the raw pipeline CLI and /pipeline tool to bedrock-sonnet
+  # (choragos inherits the same bedrock-sonnet default from
+  # modules/choragos.nix's programs.choragos.defaultProfile option).
+  home.sessionVariables = {
+    AI_CODING_MODEL_PROFILE = "bedrock-sonnet";
+  };
+
   # Override the shared opencode.json symlink (deployed by opencode.nix) with a
   # static file that merges the Ollama provider onto the upstream config. All
   # other settings (model, compaction, permission) are inherited from ai-coding.

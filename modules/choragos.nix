@@ -1,4 +1,4 @@
-{ pkgs, lib, inputs, meta, ... }:
+{ pkgs, lib, config, inputs, meta, ... }:
 
 let
   # Store-built wrapped binary (choragos-mcp-server), consumed as a flake
@@ -13,21 +13,6 @@ let
   # means this stays in sync automatically whenever the ai-coding input is
   # updated + `home-manager switch` is run — no manual path edits.
   aiCodingPkg = inputs.ai-coding.packages.${meta.system}.default;
-
-  # Expose ONLY the choragos CLI on PATH, pre-seeded with the same required
-  # env vars as the MCP registration below (AI_CODING_MONOREPO,
-  # CHORAGOS_DEFAULT_PROFILE) so `choragos --plan PLAN.md` works standalone
-  # from any shell without the caller needing to export anything. A --profile
-  # flag on the command line still overrides this default (the orchestrator
-  # prefers RunInputs.profile over Config.default_profile). The MCP server
-  # binary is deliberately left off PATH — OpenCode launches it via the
-  # absolute store path in the MCP registration.
-  choragosCli = pkgs.writeShellScriptBin "choragos" ''
-    exec env \
-      AI_CODING_MONOREPO="${aiCodingPkg}" \
-      CHORAGOS_DEFAULT_PROFILE="bedrock-sonnet" \
-      "${choragosPkg}/bin/choragos" "$@"
-  '';
 in
 {
   # Read-only option carrying the opencode.json overlay. Machine modules read
@@ -45,6 +30,23 @@ in
     '';
   };
 
+  # Per-machine default model profile. Passed as CHORAGOS_DEFAULT_PROFILE to
+  # both the standalone `choragos` CLI wrapper and the MCP server registration.
+  # Defaults to bedrock-sonnet so M1/M5 need no override (only AWS Bedrock
+  # access is available there, no direct Anthropic API key); oryp6 overrides
+  # this to opencode-free (free OpenCode Zen). A --profile flag on the command
+  # line still overrides this default at runtime (the orchestrator prefers
+  # RunInputs.profile over Config.default_profile).
+  options.programs.choragos.defaultProfile = lib.mkOption {
+    type = lib.types.str;
+    default = "bedrock-sonnet";
+    description = ''
+      Model profile choragos passes as CHORAGOS_DEFAULT_PROFILE to the choragos
+      CLI wrapper and the MCP server registration. M1/M5 keep the bedrock-sonnet
+      default; oryp6 overrides to opencode-free. A runtime --profile flag wins.
+    '';
+  };
+
   config.programs.choragos.opencodeOverlay = {
     mcp = {
       choragos = {
@@ -53,12 +55,11 @@ in
         # choragos's Config::from_env() requires AI_CODING_MONOREPO and
         # CHORAGOS_DEFAULT_PROFILE. Set explicitly rather than relying on
         # inherited shell env, since the MCP host process may not carry the
-        # same environment as an interactive shell.
-        # CHORAGOS_DEFAULT_PROFILE is "bedrock-sonnet" because Philips only
-        # provides AWS Bedrock access (no direct Anthropic API key).
+        # same environment as an interactive shell. The profile comes from the
+        # per-machine programs.choragos.defaultProfile option.
         environment = {
           AI_CODING_MONOREPO = "${aiCodingPkg}";
-          CHORAGOS_DEFAULT_PROFILE = "bedrock-sonnet";
+          CHORAGOS_DEFAULT_PROFILE = config.programs.choragos.defaultProfile;
         };
         enabled = true;
         # choragos_run_plan invokes a full plan-cycle run, which can take
@@ -69,7 +70,20 @@ in
     };
   };
 
-  # Puts the wrapped `choragos` CLI on PATH for every machine that imports
-  # this module.
-  config.home.packages = [ choragosCli ];
+  # Expose ONLY the choragos CLI on PATH, pre-seeded with the same required env
+  # vars as the MCP registration above (AI_CODING_MONOREPO,
+  # CHORAGOS_DEFAULT_PROFILE) so `choragos --plan PLAN.md` works standalone from
+  # any shell without the caller needing to export anything. A --profile flag on
+  # the command line still overrides this default. The MCP server binary is
+  # deliberately left off PATH — OpenCode launches it via the absolute store
+  # path in the MCP registration. Defined here in config (not the let block) so
+  # it can read config.programs.choragos.defaultProfile.
+  config.home.packages = [
+    (pkgs.writeShellScriptBin "choragos" ''
+      exec env \
+        AI_CODING_MONOREPO="${aiCodingPkg}" \
+        CHORAGOS_DEFAULT_PROFILE="${config.programs.choragos.defaultProfile}" \
+        "${choragosPkg}/bin/choragos" "$@"
+    '')
+  ];
 }

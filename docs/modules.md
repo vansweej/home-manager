@@ -103,6 +103,7 @@ must be real files (see "Tool deployment" above).
 | Variable | Value |
 |---|---|
 | `AI_CODING_MONOREPO` | Nix store path of the ai-coding package (set from `inputs.ai-coding.packages.${system}.default`) |
+| `OPENCODE_ZEN_MODEL` | Concrete free model for the `opencode-free` profile's OpenCode Zen endpoint (`deepseek-v4-flash-free`). Not a secret; env-driven so swapping the free model when it rotates out is a one-line change. The matching secret `OPENCODE_ZEN_API_KEY` is **not** set here (no secret manager in this repo) — export it from your own shell, like `GITHUB_COPILOT_TOKEN` / `ANTHROPIC_API_KEY`. |
 
 ### Session path
 
@@ -185,7 +186,8 @@ and troubleshooting), see the [corpus watcher runbook](athenaeum-watcher.md).
 
 ## `modules/cerebrum.nix` — cerebrum-mcp server overlay {#cerebrum-options}
 
-Imported by `common.nix`. Manages the cerebrum-mcp MCP server registration for all machines.
+Imported by **oryp6, M5, M1** (via each machine's `imports`, not `common.nix`).
+Manages the cerebrum-mcp MCP server registration for those machines.
 
 ### What the overlay contains
 
@@ -228,6 +230,64 @@ allowlist for MCP tools:
 
 For operational checks (verifying tools are registered, health checks, smoke test,
 and troubleshooting), see the [cerebrum operational runbook](cerebrum.md).
+
+---
+
+## `modules/choragos.nix` — choragos plan-cycle orchestrator {#choragos-options}
+
+Imported by **oryp6, M5, M1** (via each machine's `imports`, not `common.nix`).
+Provides two things: the `choragos_run_plan` MCP tool — a deterministic
+ai-coding plan-cycle orchestrator (clean-start gate, branch, run, PR-on-green,
+run-ledger) — and a standalone `choragos` CLI wrapper on `PATH`.
+
+### What the overlay contains
+
+| Key | Value | Description |
+|---|---|---|
+| `mcp.choragos` | MCP server block | Registers the store-built `choragos-mcp-server` binary (from the `choragos` flake input) as a `type: "local"` server. Sets `AI_CODING_MONOREPO` and `CHORAGOS_DEFAULT_PROFILE` explicitly in `environment` (the MCP host process may not carry the interactive shell env). `timeout = 600000` (10 min) so a full plan-cycle run is not aborted by the 5 s MCP client default. |
+
+The server's `command` is the absolute store path of the store-built binary
+(`${choragosPkg}/bin/choragos-mcp-server`). The wrapped `choragos` CLI is added
+to `home.packages`, pre-seeded with the same `AI_CODING_MONOREPO` and
+`CHORAGOS_DEFAULT_PROFILE` env vars so `choragos --plan PLAN.md` works from any
+shell without exporting anything. The MCP server binary itself is deliberately
+left off `PATH` — OpenCode launches it via the absolute store path in the MCP
+registration.
+
+### Options
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `programs.choragos.opencodeOverlay` | attrs (read-only) | — | opencode.json overlay registering the choragos-mcp server; consumed by machine modules via `lib.recursiveUpdate` before their single `lib.mkForce` write |
+| `programs.choragos.defaultProfile` | str | `"bedrock-sonnet"` | Model profile passed as `CHORAGOS_DEFAULT_PROFILE` to both the CLI wrapper and the MCP registration. Overridden per-machine (see below). |
+
+### Per-machine default profile
+
+`CHORAGOS_DEFAULT_PROFILE` is the profile choragos uses when a run does not pass
+an explicit `--profile`. A command-line `--profile` still wins at runtime (the
+orchestrator prefers `RunInputs.profile` over `Config.default_profile`). The
+value is set once through the `programs.choragos.defaultProfile` option so
+machines can diverge without editing this shared module:
+
+| Machine | `defaultProfile` | Rationale |
+|---|---|---|
+| **M1** | `bedrock-sonnet` (inherited default) | Only AWS Bedrock access available (no direct Anthropic API key) |
+| **M5** | `bedrock-sonnet` (inherited default) | Same as M1 |
+| **oryp6** | `opencode-free` (override) | Free OpenCode Zen profile — set via `programs.choragos.defaultProfile = "opencode-free"` in `modules/machines/oryp6.nix` |
+
+The `opencode-free` profile requires `OPENCODE_ZEN_MODEL` (set in
+`modules/opencode.nix` — see its session-variables table) and the secret
+`OPENCODE_ZEN_API_KEY` (exported from your own shell; not committed, since this
+repo has no secret manager). Machines also set `AI_CODING_MODEL_PROFILE` to the
+matching profile so the raw pipeline CLI and the `/pipeline` tool default the
+same way choragos does.
+
+### Design invariant
+
+Like `modules/athenaeum.nix` and `modules/cerebrum.nix`, this module does
+**not** set `home.file` for `opencode.json`. It only assigns the read-only
+`opencodeOverlay` option, which each consuming machine folds into its single
+`lib.recursiveUpdate` + `lib.mkForce` write.
 
 ---
 
@@ -276,6 +336,10 @@ Overrides `opencode.json` by merging the athenaeum-mcp overlay from
 `modules/athenaeum.nix` onto the upstream ai-coding config via
 `lib.recursiveUpdate` + `lib.mkForce`.
 
+Sets `programs.choragos.defaultProfile = "opencode-free"`, overriding the shared
+`bedrock-sonnet` default from `modules/choragos.nix` so choragos runs use the
+free OpenCode Zen profile on this machine.
+
 ### Packages
 
 | Package | Purpose |
@@ -289,6 +353,7 @@ Overrides `opencode.json` by merging the athenaeum-mcp overlay from
 | Variable | Value |
 |---|---|
 | `DOCKER_HOST` | `unix:///run/user/1000/docker.sock` |
+| `AI_CODING_MODEL_PROFILE` | `opencode-free` — defaults the raw pipeline CLI and the `/pipeline` OpenCode tool to the free OpenCode Zen profile (choragos is defaulted separately via `programs.choragos.defaultProfile`) |
 
 ### Services
 
@@ -307,6 +372,10 @@ Overrides `opencode.json` by merging the athenaeum-mcp overlay from
 `modules/athenaeum.nix` onto the upstream ai-coding config via
 `lib.recursiveUpdate` + `lib.mkForce`. Registers `launchd.agents.athenaeum-watch`
 (the corpus watcher). Otherwise has no machine-specific packages.
+
+Sets `home.sessionVariables.AI_CODING_MODEL_PROFILE = "bedrock-sonnet"` so the
+raw pipeline CLI and `/pipeline` tool default to Bedrock (choragos inherits the
+same `bedrock-sonnet` default from `modules/choragos.nix`).
 
 ---
 
@@ -330,6 +399,10 @@ Overrides three shared defaults with M5-specific values:
 
 - **`launchd.agents.athenaeum-watch`** — registers the corpus watcher (logs to
   `~/.local/share/athenaeum/watch.log`).
+
+Also sets `home.sessionVariables.AI_CODING_MODEL_PROFILE = "bedrock-sonnet"` so
+the raw pipeline CLI and `/pipeline` tool default to Bedrock (choragos inherits
+the same `bedrock-sonnet` default from `modules/choragos.nix`).
 
 ---
 

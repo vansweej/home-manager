@@ -39,6 +39,13 @@ in
   home.file.".config/opencode/opencode.json".source = lib.mkForce
     (pkgs.writeText "m1-opencode.json" m1OpencodeConfig);
 
+  # M1 defaults the raw pipeline CLI and /pipeline tool to bedrock-sonnet
+  # (choragos inherits the same bedrock-sonnet default from
+  # modules/choragos.nix's programs.choragos.defaultProfile option).
+  home.sessionVariables = {
+    AI_CODING_MODEL_PROFILE = "bedrock-sonnet";
+  };
+
   # Create the mutable athenaeum data dir (cwd for the MCP server) before any
   # file writes. The path comes from the athenaeum.nix option so it stays in sync
   # with the server's cwd. The old store under ~/Projects/athenaeum-mcp is NOT
