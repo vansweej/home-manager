@@ -186,7 +186,8 @@ and troubleshooting), see the [corpus watcher runbook](athenaeum-watcher.md).
 
 ## `modules/cerebrum.nix` — cerebrum-mcp server overlay {#cerebrum-options}
 
-Imported by `common.nix`. Manages the cerebrum-mcp MCP server registration for all machines.
+Imported by **oryp6, M5, M1** (via each machine's `imports`, not `common.nix`).
+Manages the cerebrum-mcp MCP server registration for those machines.
 
 ### What the overlay contains
 

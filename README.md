@@ -16,7 +16,9 @@ for multiple machines, managed from a single repository.
 - **Packages** — ghostty, neovim, bat, starship, bun, htop, tree, fonts
 - **Shell** — bash + starship prompt
 - **Neovim** — LazyVim bootstrapped on first run; custom plugin files symlinked live
-- **OpenCode** — agent profiles, skill definitions, pipeline commands and tool
+- **OpenCode** — agent profiles, skill definitions, pipeline commands and tools
+- **MCP servers** — athenaeum (library search), cerebrum (two-tier memory), and choragos (`choragos_run_plan` plan-cycle orchestrator), registered into OpenCode on oryp6/M1/M5
+- **Model profiles** — per-machine default model profile: `opencode-free` (OpenCode Zen) on oryp6, `bedrock-sonnet` (AWS Bedrock) on M1/M5, via `programs.choragos.defaultProfile` + `AI_CODING_MODEL_PROFILE`
 - **Docker** — rootless daemon via systemd user service (oryp6 only)
 - **Fonts** — FiraCode Nerd Font
 - **ai-coding** — runtime monorepo fetched from GitHub and built into the Nix store; no manual clone needed

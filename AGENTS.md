@@ -15,17 +15,21 @@ machines/
   m5.nix                           # Metadata: system, username, homeDir, flags (aarch64-darwin)
   parallels-ubuntu.nix             # Metadata: system, username, homeDir, flags (aarch64-linux)
 modules/
-  common.nix                       # Universal: programs, fonts, nvim symlinks, bootstrapNvim
-  opencode.nix                     # OpenCode: auto-discovery, activation, session vars
-  athenaeum.nix                    # Resolves store-built athenaeum-mcp binary; exposes dataDir option; registers MCP server + agent scoping
-  dev-tools.nix                    # Shared gh (programs.gh) + apm-cli (pinned GitHub Release binary); imported by oryp6 + M1 + M5 only
+  common.nix                       # Universal: programs, fonts, nvim symlinks, bootstrapNvim; imports opencode.nix + grammars.nix + sccache.nix
+  opencode.nix                     # OpenCode: auto-discovery, activation, session vars (AI_CODING_MONOREPO, OPENCODE_ZEN_MODEL)
+  grammars.nix                     # Fetches tree-sitter .wasm grammars (ts/js/rust/c/cpp/python) from npm → ~/.local/share/ai-coding/grammars/ for @ai-coding/codebase ParserPool
   sccache.nix                      # Local-only sccache compiler cache: RUSTC_WRAPPER + CARGO_INCREMENTAL=0
+  athenaeum.nix                    # Resolves store-built athenaeum-mcp binary; exposes dataDir option; registers MCP server + agent scoping (oryp6/M1/M5)
+  cerebrum.nix                     # Resolves store-built cerebrum-mcp binary; registers MCP server + tools (oryp6/M1/M5)
+  choragos.nix                     # Resolves store-built choragos-mcp binary; registers choragos_run_plan MCP tool + `choragos` CLI wrapper; programs.choragos.defaultProfile option (per-machine model profile) (oryp6/M1/M5)
+  claude.nix                       # Deploys ~/.claude/CLAUDE.md + skills from agora flake input (Claude Code config; M1/M5 only)
+  dev-tools.nix                    # Shared gh (programs.gh) + apm-cli (pinned GitHub Release binary); imported by oryp6 + M1 + M5 only
   linux.nix                        # Linux-only: nixGL wrapper (opt-in), .desktop file
   darwin.nix                       # macOS-only: placeholder for Darwin-specific config
   machines/
-    oryp6.nix                      # oryp6-only: rootless Docker, systemd service
-    m1.nix                         # M1-only: placeholder for M1-specific config
-    m5.nix                         # M5-only: Ollama provider config, local agent override
+    oryp6.nix                      # oryp6-only: rootless Docker, systemd service; choragos.defaultProfile + AI_CODING_MODEL_PROFILE = opencode-free
+    m1.nix                         # M1-only: launchd corpus watcher; AI_CODING_MODEL_PROFILE = bedrock-sonnet
+    m5.nix                         # M5-only: Ollama provider config, local agent override; AI_CODING_MODEL_PROFILE = bedrock-sonnet
     parallels-ubuntu.nix           # parallels-ubuntu-only: placeholder (test bed)
 opencode/AGENTS.md                 # Machine-wide OpenCode agent instructions
 opencode/skills/*/SKILL.md         # OpenCode skills deployed to ~/.config/opencode/skills/
