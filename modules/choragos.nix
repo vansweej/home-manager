@@ -1,4 +1,4 @@
-{ lib, inputs, meta, ... }:
+{ pkgs, lib, inputs, meta, ... }:
 
 let
   # Store-built wrapped binary (choragos-mcp-server), consumed as a flake
@@ -13,6 +13,21 @@ let
   # means this stays in sync automatically whenever the ai-coding input is
   # updated + `home-manager switch` is run — no manual path edits.
   aiCodingPkg = inputs.ai-coding.packages.${meta.system}.default;
+
+  # Expose ONLY the choragos CLI on PATH, pre-seeded with the same required
+  # env vars as the MCP registration below (AI_CODING_MONOREPO,
+  # CHORAGOS_DEFAULT_PROFILE) so `choragos --plan PLAN.md` works standalone
+  # from any shell without the caller needing to export anything. A --profile
+  # flag on the command line still overrides this default (the orchestrator
+  # prefers RunInputs.profile over Config.default_profile). The MCP server
+  # binary is deliberately left off PATH — OpenCode launches it via the
+  # absolute store path in the MCP registration.
+  choragosCli = pkgs.writeShellScriptBin "choragos" ''
+    exec env \
+      AI_CODING_MONOREPO="${aiCodingPkg}" \
+      CHORAGOS_DEFAULT_PROFILE="bedrock-sonnet" \
+      "${choragosPkg}/bin/choragos" "$@"
+  '';
 in
 {
   # Read-only option carrying the opencode.json overlay. Machine modules read
@@ -53,4 +68,8 @@ in
       };
     };
   };
+
+  # Puts the wrapped `choragos` CLI on PATH for every machine that imports
+  # this module.
+  config.home.packages = [ choragosCli ];
 }
