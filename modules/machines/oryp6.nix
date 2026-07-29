@@ -31,6 +31,11 @@ in
 {
   imports = [ ../athenaeum.nix ../cerebrum.nix ../choragos.nix ../dev-tools.nix ];
 
+  # oryp6 defaults to the free OpenCode Zen profile for both choragos and the
+  # raw pipeline CLI / /pipeline tool (see AI_CODING_MODEL_PROFILE below).
+  # Overrides the shared bedrock-sonnet default from modules/choragos.nix.
+  programs.choragos.defaultProfile = "opencode-free";
+
   # Override the shared opencode.json (deployed by opencode.nix) with a static
   # file that merges the athenaeum MCP overlay onto the upstream config.
   # NOTE: if ~/.config/opencode/opencode.json already exists as a plain file,
@@ -57,9 +62,13 @@ in
     rootlesskit   # required by rootless Docker
   ];
 
-  # Point the Docker CLI at the rootless user socket.
+  # Point the Docker CLI at the rootless user socket. AI_CODING_MODEL_PROFILE
+  # defaults the raw pipeline CLI and the /pipeline OpenCode tool to
+  # opencode-free (choragos is defaulted separately via
+  # programs.choragos.defaultProfile above).
   home.sessionVariables = {
     DOCKER_HOST = "unix:///run/user/1000/docker.sock";
+    AI_CODING_MODEL_PROFILE = "opencode-free";
   };
 
   # Register a user-level systemd service for the rootless Docker daemon.

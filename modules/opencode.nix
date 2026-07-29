@@ -145,8 +145,20 @@ in
   # ── Environment ─────────────────────────────────────────────────────────────
   # AI_CODING_MONOREPO: absolute path used by pipeline commands and the
   # skill-retrieval tool so they work from any project directory.
+  #
+  # OPENCODE_ZEN_MODEL: the concrete free model ai-coding's `opencode-free`
+  # profile dispatches to via the OpenAI-compatible OpenCode Zen endpoint. Not a
+  # secret; intentionally env-driven so swapping the free model when it rotates
+  # out is a one-line change here (no ai-coding source edit / rebuild). See
+  # ai-coding docs/architecture.md → "opencode-free profile".
+  #
+  # OPENCODE_ZEN_API_KEY (the secret) is deliberately NOT set here: this repo has
+  # no secret manager (no sops/agenix) and API keys are never committed. Export
+  # it from your own shell like the other provider secrets:
+  #   export OPENCODE_ZEN_API_KEY=...   # from https://opencode.ai/auth
   home.sessionVariables = {
     AI_CODING_MONOREPO = aiCodingRepo;
+    OPENCODE_ZEN_MODEL = "deepseek-v4-flash-free";
   };
 
   # OpenCode installs its own CLI tools here.
