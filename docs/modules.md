@@ -103,7 +103,7 @@ must be real files (see "Tool deployment" above).
 | Variable | Value |
 |---|---|
 | `AI_CODING_MONOREPO` | Nix store path of the ai-coding package (set from `inputs.ai-coding.packages.${system}.default`) |
-| `OPENCODE_ZEN_MODEL` | Concrete free model for the `opencode-free` profile's OpenCode Zen endpoint (`deepseek-v4-flash-free`). Not a secret; env-driven so swapping the free model when it rotates out is a one-line change. The matching secret `OPENCODE_ZEN_API_KEY` is **not** set here (no secret manager in this repo) — export it from your own shell, like `GITHUB_COPILOT_TOKEN` / `ANTHROPIC_API_KEY`. |
+| `OPENCODE_ZEN_MODEL` | Concrete free model for the `opencode-free` profile's OpenCode Zen endpoint (`deepseek-v4-flash-free`). Not a secret; env-driven so swapping the free model when it rotates out is a one-line change. `OPENCODE_ZEN_API_KEY` is **not** set here and is **optional** — OpenCode Zen's free-tier models accept unauthenticated requests (verified: `POST /v1/chat/completions` with no `Authorization` header returns 200 for `deepseek-v4-flash-free`, 401 for a paid model). Only needed if you point `OPENCODE_ZEN_MODEL` at a paid Zen model — export it from your own shell like `GITHUB_COPILOT_TOKEN` / `ANTHROPIC_API_KEY` (no secret manager in this repo). |
 
 ### Session path
 
@@ -276,10 +276,13 @@ machines can diverge without editing this shared module:
 | **oryp6** | `opencode-free` (override) | Free OpenCode Zen profile — set via `programs.choragos.defaultProfile = "opencode-free"` in `modules/machines/oryp6.nix` |
 
 The `opencode-free` profile requires `OPENCODE_ZEN_MODEL` (set in
-`modules/opencode.nix` — see its session-variables table) and the secret
-`OPENCODE_ZEN_API_KEY` (exported from your own shell; not committed, since this
-repo has no secret manager). Machines also set `AI_CODING_MODEL_PROFILE` to the
-matching profile so the raw pipeline CLI and the `/pipeline` tool default the
+`modules/opencode.nix` — see its session-variables table). No `OPENCODE_ZEN_API_KEY`
+is needed for the default free-tier model — OpenCode Zen's free models accept
+unauthenticated requests; a key is only required if `OPENCODE_ZEN_MODEL` is
+pointed at a paid Zen model, in which case export one from your own shell (not
+committed, since this repo has no secret manager). Machines also set
+`AI_CODING_MODEL_PROFILE` to the matching profile so the raw pipeline CLI and
+the `/pipeline` tool default the
 same way choragos does.
 
 ### Design invariant

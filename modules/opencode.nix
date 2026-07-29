@@ -152,9 +152,14 @@ in
   # out is a one-line change here (no ai-coding source edit / rebuild). See
   # ai-coding docs/architecture.md → "opencode-free profile".
   #
-  # OPENCODE_ZEN_API_KEY (the secret) is deliberately NOT set here: this repo has
-  # no secret manager (no sops/agenix) and API keys are never committed. Export
-  # it from your own shell like the other provider secrets:
+  # OPENCODE_ZEN_API_KEY is deliberately NOT set here and is OPTIONAL: OpenCode
+  # Zen's free-tier models (e.g. deepseek-v4-flash-free, the default above)
+  # accept unauthenticated requests -- verified empirically against
+  # https://opencode.ai/zen/v1/chat/completions (200 with no Authorization
+  # header for the free model; 401 for a paid one). No Zen account or key is
+  # needed to use the opencode-free profile as configured. If you ever point
+  # OPENCODE_ZEN_MODEL at a paid Zen model, export a key from your own shell
+  # (this repo has no secret manager, so it is never committed):
   #   export OPENCODE_ZEN_API_KEY=...   # from https://opencode.ai/auth
   home.sessionVariables = {
     AI_CODING_MONOREPO = aiCodingRepo;
