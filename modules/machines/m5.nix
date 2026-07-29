@@ -29,34 +29,37 @@ let
   m5OpencodeConfig = builtins.toJSON (lib.recursiveUpdate
     (lib.recursiveUpdate
       (lib.recursiveUpdate
-        (lib.recursiveUpdate baseConfig {
-          provider = {
-            ollama = {
-              npm = "@ai-sdk/openai-compatible";
-              name = "Ollama (local)";
-              options = {
-                baseURL = "http://localhost:11434/v1";
-              };
-              models = {
-                "gemma4:26b" = {
-                  name = "Gemma 4 26B (local)";
-                  limit = {
-                    context = 32768;
-                    output = 8192;
+        (lib.recursiveUpdate
+          (lib.recursiveUpdate baseConfig {
+            provider = {
+              ollama = {
+                npm = "@ai-sdk/openai-compatible";
+                name = "Ollama (local)";
+                options = {
+                  baseURL = "http://localhost:11434/v1";
+                };
+                models = {
+                  "gemma4:26b" = {
+                    name = "Gemma 4 26B (local)";
+                    limit = {
+                      context = 32768;
+                      output = 8192;
+                    };
                   };
                 };
               };
             };
-          };
-        })
-        config.programs.athenaeum.opencodeOverlay)
-      config.programs.cerebrum.opencodeOverlay)
+          })
+          config.programs.athenaeum.opencodeOverlay)
+        config.programs.cerebrum.opencodeOverlay)
+      config.programs.choragos.opencodeOverlay)
     modelOverlay);
 in
 {
   imports = [
     ../athenaeum.nix
     ../cerebrum.nix
+    ../choragos.nix
     ../claude.nix
     ../dev-tools.nix
   ];
