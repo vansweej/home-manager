@@ -29,11 +29,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1785325547,
-        "narHash": "sha256-xwTNqoMy+KdvzbsaZsDGlxHQjHuUtR4GOebC7cxrEFU=",
+        "lastModified": 1785373532,
+        "narHash": "sha256-vOVIwSm92YLpWQ8vP8o2ksCyn3JREeVUOAxro73E6EI=",
         "owner": "vansweej",
         "repo": "ai-coding",
-        "rev": "32d469431466e91b352b0a25e41106a799308cf1",
+        "rev": "aee663fff98bb22603a5b1cd49730e25ecf74d4c",
         "type": "github"
       },
       "original": {
@@ -98,11 +98,11 @@
         "rust-overlay": "rust-overlay_2"
       },
       "locked": {
-        "lastModified": 1785079279,
-        "narHash": "sha256-aV6Zbk7MYU8RQu4ilwzbIrISYdzmYtSBh1hM1XVH86w=",
+        "lastModified": 1785373030,
+        "narHash": "sha256-PqZW6DvM9857+1mCy03XoDbaiWCuwpTkAbVuJH638J8=",
         "owner": "vansweej",
         "repo": "cerebrum-mcp",
-        "rev": "4159f1016e9a12f1eb551ba6815e6417ec96f311",
+        "rev": "1f9886cacdf75deafe6a53c76edf5102322ef9ac",
         "type": "github"
       },
       "original": {
@@ -120,11 +120,11 @@
         "rust-overlay": "rust-overlay_3"
       },
       "locked": {
-        "lastModified": 1785279741,
-        "narHash": "sha256-WUSnYpA9teBvmcqY6CuXkXyToRkfQZpcR2GSCupUDJw=",
+        "lastModified": 1785373039,
+        "narHash": "sha256-UYlPs//HCMkTDz4V73+QRHRzTvXiHE/t+e/2sGvXBpI=",
         "owner": "vansweej",
         "repo": "choragos",
-        "rev": "cb2b785315661cbbc069471db9bf59d93cc14611",
+        "rev": "8a817abcfebe8a9f841254819112eda19fbf40be",
         "type": "github"
       },
       "original": {
