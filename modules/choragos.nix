@@ -13,6 +13,13 @@ let
   # means this stays in sync automatically whenever the ai-coding input is
   # updated + `home-manager switch` is run — no manual path edits.
   aiCodingPkg = inputs.ai-coding.packages.${meta.system}.default;
+
+  # Same cerebrum package input already used by cerebrum.nix to register the
+  # session's cerebrum MCP server. Reused here so choragos spawns the exact
+  # SAME wrapped binary (which cd's into ~/.local/share/cerebrum itself) —
+  # giving choragos and the plan's author one shared memory store for free,
+  # with no store-path configuration needed on choragos's side.
+  cerebrumPkg = inputs.cerebrum.packages.${meta.system}.default;
 in
 {
   # Read-only option carrying the opencode.json overlay. Machine modules read
@@ -52,14 +59,16 @@ in
       choragos = {
         type = "local";
         command = [ "${choragosPkg}/bin/choragos-mcp-server" ];
-        # choragos's Config::from_env() requires AI_CODING_MONOREPO and
-        # CHORAGOS_DEFAULT_PROFILE. Set explicitly rather than relying on
-        # inherited shell env, since the MCP host process may not carry the
-        # same environment as an interactive shell. The profile comes from the
-        # per-machine programs.choragos.defaultProfile option.
+        # choragos's Config::from_env() requires AI_CODING_MONOREPO,
+        # CHORAGOS_DEFAULT_PROFILE, and CEREBRUM_BIN. Set explicitly rather
+        # than relying on inherited shell env, since the MCP host process may
+        # not carry the same environment as an interactive shell. The
+        # profile comes from the per-machine programs.choragos.defaultProfile
+        # option.
         environment = {
           AI_CODING_MONOREPO = "${aiCodingPkg}";
           CHORAGOS_DEFAULT_PROFILE = config.programs.choragos.defaultProfile;
+          CEREBRUM_BIN = "${cerebrumPkg}/bin/cerebrum";
         };
         enabled = true;
         # choragos_run_plan invokes a full plan-cycle run, which can take
@@ -72,17 +81,19 @@ in
 
   # Expose ONLY the choragos CLI on PATH, pre-seeded with the same required env
   # vars as the MCP registration above (AI_CODING_MONOREPO,
-  # CHORAGOS_DEFAULT_PROFILE) so `choragos --plan PLAN.md` works standalone from
-  # any shell without the caller needing to export anything. A --profile flag on
-  # the command line still overrides this default. The MCP server binary is
-  # deliberately left off PATH — OpenCode launches it via the absolute store
-  # path in the MCP registration. Defined here in config (not the let block) so
-  # it can read config.programs.choragos.defaultProfile.
+  # CHORAGOS_DEFAULT_PROFILE, CEREBRUM_BIN) so `choragos --plan PLAN.md` works
+  # standalone from any shell without the caller needing to export anything.
+  # A --profile flag on the command line still overrides this default. The
+  # MCP server binary is deliberately left off PATH — OpenCode launches it
+  # via the absolute store path in the MCP registration. Defined here in
+  # config (not the let block) so it can read
+  # config.programs.choragos.defaultProfile.
   config.home.packages = [
     (pkgs.writeShellScriptBin "choragos" ''
       exec env \
         AI_CODING_MONOREPO="${aiCodingPkg}" \
         CHORAGOS_DEFAULT_PROFILE="${config.programs.choragos.defaultProfile}" \
+        CEREBRUM_BIN="${cerebrumPkg}/bin/cerebrum" \
         "${choragosPkg}/bin/choragos" "$@"
     '')
   ];
