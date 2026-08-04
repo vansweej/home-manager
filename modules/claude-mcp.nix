@@ -78,15 +78,27 @@ in
   # Idempotent registration, run once per server per machine. `claude mcp get
   # <name>` exits non-zero when the server isn't registered yet; re-running
   # `claude mcp add-json` for an already-registered name errors ("already
-  # exists"), so the guard is required, not just a nicety. Skips entirely when
-  # the `claude` CLI isn't on PATH yet (e.g. a machine where Claude Code hasn't
-  # been installed by the separate ~/.aits-claude-code-setup tool).
+  # exists"), so the guard is required, not just a nicety.
+  #
+  # `claude` is installed by the separate ~/.aits-claude-code-setup tool at
+  # $HOME/.local/bin/claude, NOT managed by this flake and NOT on the
+  # activation script's own hermetic PATH (home-manager's activation script
+  # sets an explicit PATH containing only Nix store tool paths — it does not
+  # inherit the interactive shell's PATH, so a plain `command -v claude` here
+  # always fails even when claude genuinely is installed). Resolve it
+  # explicitly: prefer PATH if some other mechanism already put it there, else
+  # fall back to the known install location. Skips entirely (no error) when
+  # neither resolves — e.g. a machine where Claude Code hasn't been installed.
   config.home.activation.registerClaudeMcpServers =
     lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      if command -v claude >/dev/null 2>&1; then
+      CLAUDE_BIN="$(command -v claude 2>/dev/null || true)"
+      if [ -z "$CLAUDE_BIN" ] && [ -x "$HOME/.local/bin/claude" ]; then
+        CLAUDE_BIN="$HOME/.local/bin/claude"
+      fi
+      if [ -n "$CLAUDE_BIN" ]; then
         ${lib.concatStringsSep "\n" (lib.mapAttrsToList (name: json: ''
-          if ! claude mcp get ${name} >/dev/null 2>&1; then
-            run claude mcp add-json ${name} -s user '${json}'
+          if ! "$CLAUDE_BIN" mcp get ${name} >/dev/null 2>&1; then
+            run "$CLAUDE_BIN" mcp add-json ${name} -s user '${json}'
           fi
         '') serverConfigs)}
       fi
