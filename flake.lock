@@ -51,11 +51,11 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1784838362,
-        "narHash": "sha256-6bhHUFs0fDjdr6TE9UQiWNGqRqSGWYxmGLs8CD6RAbc=",
+        "lastModified": 1785841095,
+        "narHash": "sha256-JL9Y2XMiuQBBqeNh2ynw240n7l6b/ToRhwBqE3WepX8=",
         "owner": "vansweej",
         "repo": "athenaeum-mcp",
-        "rev": "026ef713cf20075a2e2bf6a238f4156701300c7d",
+        "rev": "83d0bcbb7d41492588540f7446a054df4d05af18",
         "type": "github"
       },
       "original": {
@@ -98,11 +98,11 @@
         "rust-overlay": "rust-overlay_2"
       },
       "locked": {
-        "lastModified": 1785373030,
-        "narHash": "sha256-PqZW6DvM9857+1mCy03XoDbaiWCuwpTkAbVuJH638J8=",
+        "lastModified": 1785840025,
+        "narHash": "sha256-Lw+/SU/RZ4zQ04QUOcYWShWOcF/FSsOMWfPuXIPLc9E=",
         "owner": "vansweej",
         "repo": "cerebrum-mcp",
-        "rev": "1f9886cacdf75deafe6a53c76edf5102322ef9ac",
+        "rev": "21e4ed98cb5ab7fbf6da591b7ba369e56f760eca",
         "type": "github"
       },
       "original": {

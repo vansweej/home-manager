@@ -16,9 +16,9 @@ let
 
   # Same cerebrum package input already used by cerebrum.nix to register the
   # session's cerebrum MCP server. Reused here so choragos spawns the exact
-  # SAME wrapped binary (which cd's into ~/.local/share/cerebrum itself) —
-  # giving choragos and the plan's author one shared memory store for free,
-  # with no store-path configuration needed on choragos's side.
+  # SAME binary (which self-locates its LanceDB store in-binary — no cwd
+  # needed) — giving choragos and the plan's author one shared memory store
+  # for free, with no store-path configuration needed on choragos's side.
   cerebrumPkg = inputs.cerebrum.packages.${meta.system}.default;
 in
 {

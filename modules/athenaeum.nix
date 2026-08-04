@@ -6,9 +6,12 @@ let
   # module works on x86_64-linux (oryp6) and aarch64-darwin (M1, M5).
   athenaeumPkg = inputs.athenaeum.packages.${meta.system}.default;
 
-  # Mutable data directory OUTSIDE the Nix store. The MCP server is launched with
-  # this as its cwd, so its relative default db_path (./data/athenaeum) resolves
-  # to a writable location here. Per-machine home.activation scripts create it.
+  # Mutable data directory OUTSIDE the Nix store. The athenaeum-mcp-server binary
+  # and the athenaeum-ingest CLI both self-locate their LanceDB store here in-binary
+  # (crates/core/src/config.rs's default_data_dir: XDG_DATA_HOME, else HOME/.local/share,
+  # resolving to <this>/data/athenaeum) — no `cwd` or `--workdir` is needed for that
+  # anymore. dataDir is still used as the corpus-watcher unit's WorkingDirectory and
+  # log-file location (see the machine modules' launchd/systemd athenaeum-watch units).
   # Uses config.home.homeDirectory (not a hardcoded path) because it differs per
   # machine: /home/vansweej on oryp6 vs /Users/janvansweevelt on the Macs.
   dataDir = "${config.home.homeDirectory}/.local/share/athenaeum";
@@ -40,15 +43,18 @@ in
   };
 
   # Read-only option exposing the mutable data dir path. Per-machine activation
-  # scripts read this to create the directory, guaranteeing the mkdir path can
-  # never drift from the cwd used in the MCP registration below.
+  # scripts read this to create the directory (as the corpus-watcher unit's
+  # WorkingDirectory / log location — see athenaeum.nix's dataDir comment above),
+  # guaranteeing the path can never drift from what the machine modules reference.
   options.programs.athenaeum.dataDir = lib.mkOption {
     type = lib.types.str;
     readOnly = true;
     description = ''
-      Mutable data directory used as the athenaeum-mcp server's cwd. The server's
-      relative default db_path (./data/athenaeum) resolves under this path.
-      Per-machine home.activation scripts create it (mkdir -p "<dataDir>/data").
+      Mutable data directory used as the corpus-watcher unit's working directory
+      and log location. The athenaeum-mcp-server binary and athenaeum-ingest CLI
+      self-locate their own LanceDB store beneath this same path in-binary (no
+      cwd/--workdir needed); this option no longer feeds either of those.
+      Per-machine home.activation scripts create it (mkdir -p "<dataDir>").
     '';
   };
 
@@ -77,9 +83,9 @@ in
     readOnly = true;
     description = ''
       watchexec command line that watches programs.athenaeum.watchDir and runs a
-      full recursive athenaeum-ingest over it on change. The ingest subprocess is
-      forced to run with cwd = programs.athenaeum.dataDir (via watchexec --workdir)
-      so the CLI's relative db_path (./data/athenaeum) resolves to the shared store.
+      full recursive athenaeum-ingest over it on change. The ingest subprocess
+      self-locates its LanceDB store in-binary (no cwd/--workdir needed); the
+      unit's own WorkingDirectory (dataDir) is set separately for logs/cwd hygiene.
     '';
   };
 
@@ -87,23 +93,19 @@ in
 
   # Assemble the watchexec command. Flags, each deliberate:
   #   --watch <corpus>         watch the corpus directory recursively
-  #   --workdir <dataDir>      run the ingest subprocess from the data dir so the
-  #                            CLI's RELATIVE db_path (./data/athenaeum) resolves to
-  #                            the shared LanceDB store the MCP server reads. This is
-  #                            the primary cwd guarantee; the unit's WorkingDirectory
-  #                            is a second, belt-and-suspenders layer.
   #   --debounce 5s            coalesce a burst of drops into one reingest, and avoid
   #                            firing on a partially-written file
   #   --postpone               do NOT reingest at unit startup (boot / switch); only
   #                            act on a genuine post-startup change (corpus is stable)
   #   --on-busy-update queue   if a change arrives mid-reingest, queue another run
   #                            after (watchexec default is do-nothing = dropped file)
-  # No --exts filter: any change triggers a full reingest; athenaeum-ingest's own
-  # discovery filters to .pdf/.epub.
+  # No --workdir: athenaeum-ingest now self-locates its LanceDB store in-binary
+  # (crates/core/src/config.rs's default_data_dir), so its cwd no longer matters
+  # for correctness. No --exts filter: any change triggers a full reingest;
+  # athenaeum-ingest's own discovery filters to .pdf/.epub.
   config.programs.athenaeum.watchCommand =
     "${pkgs.watchexec}/bin/watchexec "
     + "--watch ${config.programs.athenaeum.watchDir} "
-    + "--workdir ${dataDir} "
     + "--debounce 5s "
     + "--postpone "
     + "--on-busy-update queue "
@@ -117,13 +119,13 @@ in
   config.programs.athenaeum.opencodeOverlay = {
     # MCP server registration. command is the store-built binary instead of
     # `nix develop … cargo run`, eliminating the manual checkout and the runtime
-    # compile. cwd pins the working directory to the mutable data dir so the
-    # server's relative db_path resolves to a writable location outside the store.
+    # compile. No cwd needed: the binary self-locates its LanceDB store in-binary
+    # (crates/core/src/config.rs's default_data_dir), resolving to the same
+    # dataDir-based path this module previously supplied via cwd.
     mcp = {
       athenaeum = {
         type = "local";
         command = [ "${athenaeumPkg}/bin/athenaeum-mcp-server" ];
-        cwd = dataDir;
         enabled = true;
       };
     };

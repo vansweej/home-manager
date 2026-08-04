@@ -29,7 +29,7 @@ let
 in
 {
   # M1 MacBook-specific configuration.
-  imports = [ ../athenaeum.nix ../cerebrum.nix ../choragos.nix ../claude.nix ../dev-tools.nix ];
+  imports = [ ../athenaeum.nix ../cerebrum.nix ../choragos.nix ../claude.nix ../claude-mcp.nix ../dev-tools.nix ];
 
   # Override the shared opencode.json (deployed by opencode.nix) with a static
   # file that merges the athenaeum MCP overlay onto the upstream config.
@@ -46,13 +46,17 @@ in
     AI_CODING_MODEL_PROFILE = "bedrock-sonnet";
   };
 
-  # Create the mutable athenaeum data dir (cwd for the MCP server) before any
-  # file writes. The path comes from the athenaeum.nix option so it stays in sync
-  # with the server's cwd. The old store under ~/Projects/athenaeum-mcp is NOT
-  # migrated — re-ingest after switching.
+  # Create the mutable athenaeum data dir before any file writes. It is used as
+  # the corpus-watcher unit's WorkingDirectory and log location below (the
+  # athenaeum-mcp-server binary and athenaeum-ingest CLI self-locate their own
+  # LanceDB store beneath this same path in-binary, so this mkdir no longer
+  # needs to pre-create the /data subdirectory — the binary creates it lazily
+  # on first write). The path comes from the athenaeum.nix option so it stays
+  # in sync with what the watcher unit references. The old store under
+  # ~/Projects/athenaeum-mcp is NOT migrated — re-ingest after switching.
   home.activation.createAthenaeumDataDir =
     lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      run mkdir -p "${config.programs.athenaeum.dataDir}/data"
+      run mkdir -p "${config.programs.athenaeum.dataDir}"
       run mkdir -p "${config.programs.athenaeum.watchDir}"
     '';
 
@@ -60,12 +64,11 @@ in
   # invokes the short-lived athenaeum-ingest CLI on each debounced change.
   # ProgramArguments wraps watchCommand in `sh -lc` because launchd needs a list
   # and watchCommand is one string; -l (login shell) yields a sane PATH.
-  # WorkingDirectory = dataDir is a second cwd guarantee on top of watchexec
-  # --workdir, ensuring the CLI's relative db_path (./data/athenaeum) resolves to
-  # the shared store rather than a stray DB in the corpus. RunAtLoad + KeepAlive
-  # keep it running and relaunch on exit. launchd has no journal, so stdout/stderr
-  # go to log files under dataDir — kept out of watchDir so log writes cannot
-  # trigger the watcher.
+  # WorkingDirectory = dataDir is this unit's own cwd (for logs, below) — the
+  # ingest subprocess itself no longer depends on cwd, since it self-locates its
+  # LanceDB store in-binary. RunAtLoad + KeepAlive keep it running and relaunch
+  # on exit. launchd has no journal, so stdout/stderr go to log files under
+  # dataDir — kept out of watchDir so log writes cannot trigger the watcher.
   launchd.agents.athenaeum-watch = {
     enable = true;
     config = {
