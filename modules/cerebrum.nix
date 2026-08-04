@@ -1,10 +1,14 @@
 { lib, inputs, meta, ... }:
 
 let
-  # Store-built wrapped binary (named `cerebrum`). The wrapper creates and cd's
-  # into ~/.local/share/cerebrum itself, so this module needs no dataDir option,
-  # no activation mkdir, and no cwd in the MCP registration. The shipped binary
-  # uses real Ollama embeddings (lazy-initialized on first remember/recall call).
+  # Store-built cerebrum binary. The binary self-locates its LanceDB store
+  # in-binary (crates/cerebrum-core/src/config.rs's default_data_dir: XDG_DATA_HOME,
+  # else HOME/.local/share, resolving to ~/.local/share/cerebrum/data/cerebrum by
+  # default), so this module needs no dataDir option, no activation mkdir, and no
+  # cwd in the MCP registration — packages.default is the bare binary directly
+  # (the former cd-wrapping cerebrum-wrapped shell script has been removed
+  # upstream now that it's redundant). The shipped binary uses real Ollama
+  # embeddings (lazy-initialized on first remember/recall call).
   cerebrumPkg = inputs.cerebrum.packages.${meta.system}.default;
 in
 {

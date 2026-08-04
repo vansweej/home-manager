@@ -44,13 +44,17 @@ in
   home.file.".config/opencode/opencode.json".source = lib.mkForce
     (pkgs.writeText "oryp6-opencode.json" oryp6OpencodeConfig);
 
-  # Create the mutable athenaeum data dir (cwd for the MCP server) before any
-  # file writes. The path comes from the athenaeum.nix option so it stays in sync
-  # with the server's cwd. The old store under ~/Projects/athenaeum-mcp is NOT
-  # migrated — re-ingest after switching.
+  # Create the mutable athenaeum data dir before any file writes. It is used as
+  # the corpus-watcher unit's WorkingDirectory below (the athenaeum-mcp-server
+  # binary and athenaeum-ingest CLI self-locate their own LanceDB store beneath
+  # this same path in-binary, so this mkdir no longer needs to pre-create the
+  # /data subdirectory — the binary creates it lazily on first write). The path
+  # comes from the athenaeum.nix option so it stays in sync with what the
+  # watcher unit references. The old store under ~/Projects/athenaeum-mcp is
+  # NOT migrated — re-ingest after switching.
   home.activation.createAthenaeumDataDir =
     lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      run mkdir -p "${config.programs.athenaeum.dataDir}/data"
+      run mkdir -p "${config.programs.athenaeum.dataDir}"
       run mkdir -p "${config.programs.athenaeum.watchDir}"
     '';
 
@@ -93,10 +97,11 @@ in
 
   # Long-running corpus watcher. watchexec is the only resident process; it invokes
   # the short-lived athenaeum-ingest CLI on each debounced change. WorkingDirectory
-  # is dataDir (NOT watchDir) as a second cwd guarantee on top of watchexec
-  # --workdir, so the CLI's relative db_path (./data/athenaeum) resolves to the
-  # shared store. Pointing cwd at watchDir would create a stray DB inside the
-  # corpus. ExecStart is a plain argv string — systemd splits it on whitespace and
+  # is dataDir (NOT watchDir) purely as this unit's own cwd/log location — the
+  # ingest subprocess itself no longer depends on cwd, since it self-locates its
+  # LanceDB store in-binary. Pointing cwd at watchDir would be harmless for the
+  # store now, but dataDir is kept for consistency with the log-file convention.
+  # ExecStart is a plain argv string — systemd splits it on whitespace and
   # runs it without a shell. Restart = "always" mirrors macOS launchd KeepAlive;
   # systemd's default start-limit (5/10s) guards a crash-loop. Output goes to the
   # systemd journal (journalctl --user -u athenaeum-watch).
