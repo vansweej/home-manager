@@ -27,6 +27,25 @@ let
       { source = skillsDir + "/${name}"; recursive = true; }
   ) (lib.filterAttrs (_: t: t == "directory") skillDirs);
 
+  # ── Agents (Option A: committed render output) ────────────────────────────
+  # clients/claude/.apm/agents/<name>.md — the 3 specialist subagents
+  # (explore, spar, plan) are rendered here by renderers/render.sh as real
+  # Claude Code subagent files (not skills), since they are OpenCode
+  # `mode: subagent` invoked exclusively via the `task` tool by
+  # `coordinator`, and Claude's own Task tool addresses subagents by name
+  # the same way. This directory did not exist before the coordinator
+  # architecture landed (agora used to ship persona content to Claude only
+  # as skills, never as agents) — see agora/docs/architecture.md.
+  # Adding a new specialist subagent: re-run renderers/render.sh in agora
+  # after adding it to SPECIALIST_SUBAGENTS there — no changes needed here.
+  agentsDir = claudeDir + "/clients/claude/.apm/agents";
+  agentFiles = builtins.readDir agentsDir;
+  agentEntries = lib.mapAttrs' (name: _:
+    lib.nameValuePair
+      ".claude/agents/${name}"
+      { source = agentsDir + "/${name}"; }
+  ) (lib.filterAttrs (_: t: t == "regular") agentFiles);
+
   # ── Strip apm instruction frontmatter ────────────────────────────────────────
   # CLAUDE.md is now authored as an apm `instructions` primitive
   # (clients/claude/.apm/instructions/claude.instructions.md), which requires
@@ -71,5 +90,6 @@ in
     ".claude/CLAUDE.md".text =
       stripFrontmatter (claudeDir + "/clients/claude/.apm/instructions/claude.instructions.md");
   }
-  // skillEntries;
+  // skillEntries
+  // agentEntries;
 }
