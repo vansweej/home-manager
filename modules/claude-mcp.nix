@@ -1,7 +1,6 @@
 { config, lib, pkgs, inputs, meta, ... }:
 
 let
-  cerebrumPkg  = inputs.cerebrum.packages.${meta.system}.default;
   athenaeumPkg = inputs.athenaeum.packages.${meta.system}.default;
   choragosPkg  = inputs.choragos.packages.${meta.system}.default;
   aiCodingPkg  = inputs.ai-coding.packages.${meta.system}.default;
@@ -25,7 +24,7 @@ let
   # any client, including Claude Code's stdio transport, which has no `cwd`
   # field at all (unlike OpenCode's mcp.<name>.cwd).
   cerebrumMcpWrapper = pkgs.writeShellScriptBin "cerebrum-mcp" ''
-    exec ${cerebrumPkg}/bin/cerebrum "$@"
+    exec ${config.programs.cerebrum.binPath} "$@"
   '';
 
   athenaeumMcpWrapper = pkgs.writeShellScriptBin "athenaeum-mcp" ''
@@ -42,7 +41,7 @@ let
     exec env \
       AI_CODING_MONOREPO="${aiCodingPkg}" \
       CHORAGOS_DEFAULT_PROFILE="${config.programs.choragos.defaultProfile}" \
-      CEREBRUM_BIN="${cerebrumPkg}/bin/cerebrum" \
+      CEREBRUM_BIN="${config.programs.cerebrum.binPath}" \
       "${choragosPkg}/bin/choragos-mcp-server" "$@"
   '';
 

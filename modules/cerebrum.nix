@@ -1,4 +1,4 @@
-{ lib, inputs, meta, ... }:
+{ lib, inputs, meta, config, ... }:
 
 let
   # Store-built cerebrum binary. The binary self-locates its LanceDB store
@@ -12,6 +12,26 @@ let
   cerebrumPkg = inputs.cerebrum.packages.${meta.system}.default;
 in
 {
+  # Single source of truth for the absolute store path to the cerebrum binary.
+  # readOnly: its value is fixed to "${cerebrumPkg}/bin/cerebrum" by this module.
+  # Consumed by choragos.nix (MCP env + CLI wrapper) and claude-mcp.nix
+  # (cerebrum-mcp + choragos-mcp wrappers) via config.programs.cerebrum.binPath,
+  # eliminating duplicated store-path derivations. Also exported to interactive
+  # login shells as CEREBRUM_BIN (below) so a raw pipeline invocation
+  # (`bun run … pipeline plan-cycle … --plan-ref …`) can resolve --plan-ref
+  # without going through the choragos CLI wrapper that pre-seeds it.
+  # The bare binary is deliberately NOT on PATH; consumers must use this
+  # absolute store path.
+  options.programs.cerebrum.binPath = lib.mkOption {
+    type = lib.types.str;
+    readOnly = true;
+    description = ''
+      Absolute /nix/store path to the cerebrum binary
+      ("''${cerebrumPkg}/bin/cerebrum"). Single source of truth consumed by
+      choragos.nix, claude-mcp.nix, and the CEREBRUM_BIN session variable.
+    '';
+  };
+
   # Read-only option carrying the opencode.json overlay. Machine modules read
   # this via config.programs.cerebrum.opencodeOverlay and fold it into their
   # single lib.recursiveUpdate before one lib.mkForce write of opencode.json.
@@ -26,6 +46,15 @@ in
       lib.mkForce write of ~/.config/opencode/opencode.json.
     '';
   };
+
+  config.programs.cerebrum.binPath = "${cerebrumPkg}/bin/cerebrum";
+
+  # Expose the cerebrum binary path to interactive login shells so a raw
+  # `bun run … pipeline …` invocation (outside the choragos MCP/CLI wrappers,
+  # which set CEREBRUM_BIN themselves) can resolve --plan-ref. Home-Manager
+  # writes this into hm-session-vars.sh, sourced by login shells on every host
+  # importing this module (oryp6, m1, m5) — no per-host edits needed.
+  config.home.sessionVariables.CEREBRUM_BIN = config.programs.cerebrum.binPath;
 
   config.programs.cerebrum.opencodeOverlay = {
     mcp = {

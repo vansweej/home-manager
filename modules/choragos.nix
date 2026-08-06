@@ -14,12 +14,6 @@ let
   # updated + `home-manager switch` is run — no manual path edits.
   aiCodingPkg = inputs.ai-coding.packages.${meta.system}.default;
 
-  # Same cerebrum package input already used by cerebrum.nix to register the
-  # session's cerebrum MCP server. Reused here so choragos spawns the exact
-  # SAME binary (which self-locates its LanceDB store in-binary — no cwd
-  # needed) — giving choragos and the plan's author one shared memory store
-  # for free, with no store-path configuration needed on choragos's side.
-  cerebrumPkg = inputs.cerebrum.packages.${meta.system}.default;
 in
 {
   # Read-only option carrying the opencode.json overlay. Machine modules read
@@ -68,7 +62,7 @@ in
         environment = {
           AI_CODING_MONOREPO = "${aiCodingPkg}";
           CHORAGOS_DEFAULT_PROFILE = config.programs.choragos.defaultProfile;
-          CEREBRUM_BIN = "${cerebrumPkg}/bin/cerebrum";
+          CEREBRUM_BIN = config.programs.cerebrum.binPath;
         };
         enabled = true;
         # choragos_run_plan invokes a full plan-cycle run, which can take
@@ -93,7 +87,7 @@ in
       exec env \
         AI_CODING_MONOREPO="${aiCodingPkg}" \
         CHORAGOS_DEFAULT_PROFILE="${config.programs.choragos.defaultProfile}" \
-        CEREBRUM_BIN="${cerebrumPkg}/bin/cerebrum" \
+        CEREBRUM_BIN="${config.programs.cerebrum.binPath}" \
         "${choragosPkg}/bin/choragos" "$@"
     '')
   ];
