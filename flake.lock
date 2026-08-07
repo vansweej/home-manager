@@ -29,11 +29,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1786081487,
-        "narHash": "sha256-WYgj+NbAkkkeu88cI1cnmLqwQmNvjzjXOsVWkkVHlUE=",
+        "lastModified": 1786084454,
+        "narHash": "sha256-NZj5vinSUux3ITrcYvoLJ20HOmwsYvoA1WrC6OuSoA0=",
         "owner": "vansweej",
         "repo": "ai-coding",
-        "rev": "05d852fd3855149c5631d052d9720c7b804073fe",
+        "rev": "3df4d515a394446601ca3364fc06fe5e6e3cb768",
         "type": "github"
       },
       "original": {
