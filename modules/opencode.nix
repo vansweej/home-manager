@@ -1,4 +1,4 @@
-{ pkgs, lib, inputs, meta, ... }:
+{ config, pkgs, lib, inputs, meta, ... }:
 
 let
   # The authored agents/skills/commands/bin/AGENTS.md/package.json content
@@ -14,10 +14,44 @@ let
   # from the pinned flake input. Read-only in the store; bun run works fine
   # from read-only paths (verified). No git clone or bun install at activation.
   aiCodingPkg  = inputs.ai-coding.packages.${meta.system}.default;
-  # Points at the writable source checkout so `bun run --cwd $AI_CODING_MONOREPO`
-  # works against live edits. aiCodingPkg (the store path) is kept for
-  # opencode.json sourcing and MCP/choragos wrappers.
-  aiCodingRepo = "/home/vansweej/Projects/ai-coding";
+  # AI_CODING_MONOREPO runtime root. Must be the Nix store $out (= aiCodingPkg):
+  # it is the only tree with a complete node_modules/** — workspace:* links are
+  # resolved by bun2nix at build time. bun run --cwd $AI_CODING_MONOREPO <script>
+  # runs the TS source directly from this read-only path; no git clone or bun
+  # install at activation. Matches the aiCodingPkg value already used by
+  # choragos.nix and claude-mcp.nix for consistency. (Reverts regression 5a78655
+  # which pointed at the writable source checkout — that tree has no
+  # node_modules/@ai-coding/* so @ai-coding/* imports throw at module load.)
+  aiCodingRepo = "${aiCodingPkg}";
+
+  # The `ai-pipeline` wrapper: the CORRECTNESS mechanism for reaching the
+  # ai-coding monorepo from ANY shell, not just login shells. home.sessionVariables
+  # only propagate via hm-session-vars.sh in login shells, so non-login callers
+  # (choragos subshells, editor tasks, ssh host commands, cron) otherwise invoke
+  # `bun run --cwd $AI_CODING_MONOREPO pipeline` with an unset AI_CODING_MONOREPO /
+  # CEREBRUM_BIN and fail silently at module load. This wrapper hardwires both
+  # from the Nix store closure (rebuild re-derives them, robust to cerebrum churn)
+  # and asserts the target tree is runnable before exec. Mirrors the
+  # writeShellScriptBin + home.packages pattern in choragos.nix / claude-mcp.nix.
+  pipelineWrapper = pkgs.writeShellScriptBin "ai-pipeline" ''
+    set -euo pipefail
+
+    # Store paths baked in at build time — nix antiquotations resolved now,
+    # NOT runtime shell vars.
+    export AI_CODING_MONOREPO="${aiCodingPkg}"
+    export CEREBRUM_BIN="${config.programs.cerebrum.binPath}"
+
+    # Loud, unconditional run-time guard (never TTY-gated): validate that the
+    # tree we are about to run actually has its @ai-coding/pipeline workspace
+    # linked. Unlike an activation-time check on the store path (a tautology),
+    # this can genuinely fire and points at the real fault.
+    if [ ! -e "''${AI_CODING_MONOREPO}/node_modules/@ai-coding/pipeline" ]; then
+      echo "ai-pipeline: AI_CODING_MONOREPO=''${AI_CODING_MONOREPO} has no node_modules/@ai-coding/pipeline — the tree is not runnable (rebuild home-manager / check the ai-coding flake input)" >&2
+      exit 1
+    fi
+
+    exec ${pkgs.bun}/bin/bun run --cwd "''${AI_CODING_MONOREPO}" pipeline "$@"
+  '';
 
   # ── Auto-discover agents ────────────────────────────────────────────────────
   # Agora's OpenCode agents now live under the apm-native .apm/agents/
@@ -146,8 +180,10 @@ in
   // binEntries;
 
   # ── Environment ─────────────────────────────────────────────────────────────
-  # AI_CODING_MONOREPO: absolute path used by pipeline commands and the
-  # skill-retrieval tool so they work from any project directory.
+  # AI_CODING_MONOREPO: belt-and-suspenders convenience for skill-retrieval and
+  # interactive login shells. The load-bearing transport is the `ai-pipeline`
+  # wrapper below (home.packages), which hardwires both AI_CODING_MONOREPO and
+  # CEREBRUM_BIN from the store closure so they reach ANY shell, not just login.
   #
   # OPENCODE_ZEN_MODEL: the concrete free model ai-coding's `opencode-free`
   # profile dispatches to via the OpenAI-compatible OpenCode Zen endpoint. Not a
@@ -168,6 +204,13 @@ in
     AI_CODING_MONOREPO = aiCodingRepo;
     OPENCODE_ZEN_MODEL = "deepseek-v4-flash-free";
   };
+
+  # Deploy the `ai-pipeline` wrapper onto PATH (nix profile bin). This is the
+  # load-bearing transport for AI_CODING_MONOREPO / CEREBRUM_BIN; the
+  # home.sessionVariables above are now belt-and-suspenders only.
+  # Named `ai-pipeline` (not `pipeline`) for collision-safety across a 40+ repo
+  # fleet. Usage: ai-pipeline plan-cycle <workspace> --plan <file> ...
+  home.packages = [ pipelineWrapper ];
 
   # OpenCode installs its own CLI tools here.
   # ~/.local/bin/ holds shell wrapper scripts deployed from agora's bin/.
