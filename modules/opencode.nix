@@ -14,7 +14,10 @@ let
   # from the pinned flake input. Read-only in the store; bun run works fine
   # from read-only paths (verified). No git clone or bun install at activation.
   aiCodingPkg  = inputs.ai-coding.packages.${meta.system}.default;
-  aiCodingRepo = "${aiCodingPkg}";
+  # Points at the writable source checkout so `bun run --cwd $AI_CODING_MONOREPO`
+  # works against live edits. aiCodingPkg (the store path) is kept for
+  # opencode.json sourcing and MCP/choragos wrappers.
+  aiCodingRepo = "/home/vansweej/Projects/ai-coding";
 
   # ── Auto-discover agents ────────────────────────────────────────────────────
   # Agora's OpenCode agents now live under the apm-native .apm/agents/
