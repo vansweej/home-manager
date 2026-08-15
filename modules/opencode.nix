@@ -50,7 +50,7 @@ let
       exit 1
     fi
 
-    exec ${pkgs.bun}/bin/bun run --cwd "''${AI_CODING_MONOREPO}" ai-system/cli/run-pipeline-cli.ts "$@"
+    ${pkgs.bun}/bin/bun run --cwd "''${AI_CODING_MONOREPO}" ai-system/cli/run-pipeline-cli.ts "$@"
   '';
 
   # ── Auto-discover agents ────────────────────────────────────────────────────
