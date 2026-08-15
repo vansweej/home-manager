@@ -148,10 +148,12 @@ files — it is a data-only module that declares and assigns the
 |---|---|---|
 | `mcp.athenaeum` | MCP server block | Registers the store-built `athenaeum-mcp-server` binary (from the `athenaeum` flake input) as a `type: "local"` server, with `cwd` pinned to the data dir (`~/.local/share/athenaeum`) so the relative `./data/athenaeum` db_path resolves to a writable store outside the Nix store. |
 | `tools."athenaeum*"` | `false` | Disables the server's tools globally |
+| `agent.coordinator.tools."athenaeum*"` | `true` | Enables for coordinator |
 | `agent.brainstorm.tools."athenaeum*"` | `true` | Enables for brainstorm |
 | `agent.spar.tools."athenaeum*"` | `true` | Enables for spar |
 | `agent.teach.tools."athenaeum*"` | `true` | Enables for teach |
 | `agent.plan.tools."athenaeum*"` | `true` | Enables for plan |
+| `agent.explore.tools."athenaeum*"` | `true` | Enables for explore |
 
 The server's `command` is the absolute store path of the store-built binary
 (`${athenaeumPkg}/bin/athenaeum-mcp-server`). The `cwd` field resolves from
@@ -208,8 +210,8 @@ during cold-start (e.g., when Ollama is warming up a model).
 ### Tools
 
 The following tools are registered. They are enabled globally; agents without a
-per-agent `tools` allowlist get them by default, while the five athenaeum-scoped
-thinking agents (`brainstorm`, `spar`, `teach`, `plan`, `explore`) have `cerebrum*`
+per-agent `tools` allowlist get them by default, while the six athenaeum-scoped
+thinking agents (`coordinator`, `brainstorm`, `spar`, `teach`, `plan`, `explore`) have `cerebrum*`
 re-asserted in `cerebrum.nix` because OpenCode treats a per-agent `tools` map as an
 allowlist for MCP tools:
 
