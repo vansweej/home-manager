@@ -305,7 +305,7 @@ Tools (`cerebrum_remember`, `cerebrum_recall`, `cerebrum_memorize`,
 globally, so agents **without** a per-agent `tools` allowlist (e.g. `build` and the
 subagents) get them by default. However, OpenCode treats a per-agent `tools` map as
 an allowlist for MCP tools: any MCP tool not named in that map is dropped from that
-agent. Because `athenaeum.nix` gives the five thinking agents (`brainstorm`, `spar`,
+agent. Because `athenaeum.nix` gives the six thinking agents (`coordinator`, `brainstorm`, `spar`,
 `teach`, `plan`, `explore`) an `athenaeum*` allowlist, `cerebrum.nix` must re-assert
 `cerebrum*` on those same agents or cerebrum silently disappears from them. This is
 done via the `agent` block in `programs.cerebrum.opencodeOverlay`, which

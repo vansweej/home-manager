@@ -73,6 +73,7 @@ in
     # yielding e.g. explore.tools = { "athenaeum*" = true; "cerebrum*" = true; }.
     # Agents without a `tools` block (e.g. build) already get cerebrum by default.
     agent = {
+      coordinator = { tools = { "cerebrum*" = true; }; };
       brainstorm = { tools = { "cerebrum*" = true; }; };
       spar       = { tools = { "cerebrum*" = true; }; };
       teach      = { tools = { "cerebrum*" = true; }; };

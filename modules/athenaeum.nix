@@ -138,6 +138,7 @@ in
     };
 
     agent = {
+      coordinator = { tools = { "athenaeum*" = true; }; };
       brainstorm = { tools = { "athenaeum*" = true; }; };
       spar = { tools = { "athenaeum*" = true; }; };
       teach = { tools = { "athenaeum*" = true; }; };
