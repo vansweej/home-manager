@@ -33,7 +33,26 @@ let
   # from the Nix store closure (rebuild re-derives them, robust to cerebrum churn)
   # and asserts the target tree is runnable before exec. Mirrors the
   # writeShellScriptBin + home.packages pattern in choragos.nix / claude-mcp.nix.
-  pipelineWrapper = pkgs.writeShellScriptBin "ai-pipeline" ''
+  #
+  # TWO-LAYER SELF-ENFORCING GUARD (plan:self-enforcing-pipeline-guards-v1):
+  #   * Layer 1 (item 3) — pipelineWrapper is a PURE build-time runCommand that
+  #     asserts node_modules/@ai-coding/pipeline EXISTS in the wired tree
+  #     (structural / existence check, no bun in the sandbox). Missing link ->
+  #     wrapper fails to build -> home-manager generation fails -> switch aborts.
+  #   * Layer 2 (item 7) — home.activation.checkAiPipelineDoctor runs the FULL
+  #     `doctor` at activation time (real $HOME) to validate entrypoints IMPORT
+  #     cleanly; HARD-FAIL aborts the switch. Layer 1 = build-time existence;
+  #     Layer 2 = activation-time full-doctor import validation.
+  #   The full doctor is deliberately NOT run at build time: the Nix build
+  #   sandbox HOME/cwd are non-writable (bun cache EROFS/EACCES) and native
+  #   addon dlopen there is unproven. Activation runs under a real $HOME, safe.
+
+  # Build-time-baked wrapper BODY, factored out so the pure structural gate
+  # (pipelineWrapper, below) can install it into $out/bin without re-running bun
+  # in the sandbox. Byte-identical to the previous writeShellScriptBin body.
+  # Escaping: ${aiCodingPkg} / ${config...} are nix antiquotations (build-time);
+  # ''${AI_CODING_MONOREPO} are RUNTIME shell vars in the emitted script.
+  pipelineScript = pkgs.writeShellScript "ai-pipeline" ''
     set -euo pipefail
 
     # Store paths baked in at build time — nix antiquotations resolved now,
@@ -51,6 +70,24 @@ let
     fi
 
     ${pkgs.bun}/bin/bun run --cwd "''${AI_CODING_MONOREPO}" ai-system/cli/run-pipeline-cli.ts "$@"
+  '';
+
+  # ITEM 3 — build-time STRUCTURAL gate (pure; no bun-in-sandbox).
+  # Assert the wired ai-coding store tree actually has its @ai-coding/pipeline
+  # workspace link. This is the exact regression class the design targets
+  # (5a78655 pointed AI_CODING_MONOREPO at a tree with no node_modules/@ai-coding/*
+  # so @ai-coding/* imports throw at module load). If the link is absent the
+  # wrapper fails to build -> the home-manager generation fails to build ->
+  # `home-manager switch` aborts. Non-bypassable, fully reproducible, offline.
+  # (The FULL import-validation doctor runs at activation time — layer 2 —
+  # where a real $HOME makes bun + native addons safe to run.)
+  pipelineWrapper = pkgs.runCommand "ai-pipeline" { } ''
+    if [ ! -e "${aiCodingPkg}/node_modules/@ai-coding/pipeline" ]; then
+      echo "ai-pipeline: BUILD ABORTED — the wired ai-coding tree (${aiCodingPkg}) has no node_modules/@ai-coding/pipeline; its @ai-coding/* imports would throw at load. home-manager activation is refused. Re-pin/fix the ai-coding flake input, then rebuild." >&2
+      exit 1
+    fi
+    mkdir -p $out/bin
+    install -m0755 ${pipelineScript} $out/bin/ai-pipeline
   '';
 
   # ── Auto-discover agents ────────────────────────────────────────────────────
@@ -246,5 +283,22 @@ in
         $DRY_RUN_CMD ${pkgs.coreutils}/bin/cp -f "$src" "$toolsDir/$name"
         $DRY_RUN_CMD ${pkgs.coreutils}/bin/chmod u+w "$toolsDir/$name"
       done
+    '';
+
+  # ITEM 7 — activation-time FULL doctor (import-validation layer, HARD-FAIL).
+  # Layer 1 (build-time) only asserts the workspace link EXISTS. This layer runs
+  # the real pipeline `doctor` at switch time — where $HOME is the real user home
+  # and there is no build-sandbox purity constraint, so bun + native-addon dlopen
+  # run safely — to validate that the pipeline entrypoint modules actually IMPORT
+  # cleanly (not merely that the link exists). doctor is offline (no network /
+  # tokens): first positional `doctor`, exit 0 pass / non-zero fail. HARD-FAIL:
+  # a failure here means the wired tree is not runnable, so activation is refused.
+  # ($DRY_RUN_CMD keeps `--dry-run` inert: it becomes `echo`, exits 0, guard skips.)
+  home.activation.checkAiPipelineDoctor =
+    lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      echo "ai-pipeline: activation doctor — validating pipeline entrypoints import cleanly against ${aiCodingPkg}" >&2
+      $DRY_RUN_CMD ${pkgs.bun}/bin/bun run --cwd ${aiCodingPkg} \
+        ai-system/cli/run-pipeline-cli.ts doctor \
+        || { echo "ai-pipeline: ACTIVATION ABORTED — pipeline doctor failed against ${aiCodingPkg}; entrypoints do not import cleanly. Fix/re-pin the ai-coding flake input, then re-switch." >&2; exit 1; }
     '';
 }
