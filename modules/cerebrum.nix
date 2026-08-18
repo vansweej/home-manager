@@ -61,6 +61,11 @@ in
       cerebrum = {
         type = "local";
         command = [ "${cerebrumPkg}/bin/cerebrum" ];
+        environment = {
+          CEREBRUM_TABLE_NAME = "memories_qwen3";
+          CEREBRUM_EMBED_MODEL = "qwen3-embedding:0.6b";
+          CEREBRUM_EMBEDDING_DIM = "1024";
+        };
         enabled = true;
       };
     };

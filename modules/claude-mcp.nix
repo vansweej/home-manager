@@ -24,7 +24,11 @@ let
   # any client, including Claude Code's stdio transport, which has no `cwd`
   # field at all (unlike OpenCode's mcp.<name>.cwd).
   cerebrumMcpWrapper = pkgs.writeShellScriptBin "cerebrum-mcp" ''
-    exec ${config.programs.cerebrum.binPath} "$@"
+    exec env \
+      CEREBRUM_TABLE_NAME="memories_qwen3" \
+      CEREBRUM_EMBED_MODEL="qwen3-embedding:0.6b" \
+      CEREBRUM_EMBEDDING_DIM="1024" \
+      ${config.programs.cerebrum.binPath} "$@"
   '';
 
   athenaeumMcpWrapper = pkgs.writeShellScriptBin "athenaeum-mcp" ''
