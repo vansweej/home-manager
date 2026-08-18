@@ -56,6 +56,22 @@ in
   # importing this module (oryp6, m1, m5) — no per-host edits needed.
   config.home.sessionVariables.CEREBRUM_BIN = config.programs.cerebrum.binPath;
 
+  # Also export the table/model/dim triple to interactive login shells, for
+  # the same reason: any raw CLI invocation of $CEREBRUM_BIN (e.g. choragos's
+  # own plan-ref resolution, or a manual `cerebrum-reembed` run) previously
+  # ran on Config::default() alone, disagreeing with the MCP wrapper's
+  # `environment` block below. As of cerebrum-mcp ADR 0002 the compiled
+  # default already matches these values (memories_qwen3 / qwen3-embedding:0.6b
+  # / 1024), so this export is now redundant-but-explicit belt-and-suspenders:
+  # it keeps the session-variable and the MCP wrapper's environment block as
+  # a single documented source of truth rather than relying on the compiled
+  # default alone, and it means `echo $CEREBRUM_TABLE_NAME` in an interactive
+  # shell tells the truth. All three hosts importing this module (oryp6, m1,
+  # m5) have been migrated to memories_qwen3 via cerebrum-reembed.
+  config.home.sessionVariables.CEREBRUM_TABLE_NAME = "memories_qwen3";
+  config.home.sessionVariables.CEREBRUM_EMBED_MODEL = "qwen3-embedding:0.6b";
+  config.home.sessionVariables.CEREBRUM_EMBEDDING_DIM = "1024";
+
   config.programs.cerebrum.opencodeOverlay = {
     mcp = {
       cerebrum = {
