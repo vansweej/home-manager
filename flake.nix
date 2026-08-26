@@ -28,6 +28,10 @@
       url = "github:vansweej/agora";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    argus = {
+      url = "github:vansweej/argus";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
