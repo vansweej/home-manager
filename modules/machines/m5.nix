@@ -57,6 +57,7 @@ let
 in
 {
   imports = [
+    ../argus.nix
     ../athenaeum.nix
     ../cerebrum.nix
     ../choragos.nix
