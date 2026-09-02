@@ -20,6 +20,7 @@ modules/
   grammars.nix                     # Fetches tree-sitter .wasm grammars (ts/js/rust/c/cpp/python) from npm → ~/.local/share/ai-coding/grammars/ for @ai-coding/codebase ParserPool
   sccache.nix                      # Local-only sccache compiler cache: RUSTC_WRAPPER + CARGO_INCREMENTAL=0
   athenaeum.nix                    # Resolves store-built athenaeum-mcp binary; exposes dataDir option; registers MCP server + agent scoping (oryp6/M1/M5)
+  pavo.nix                         # Deploys (copies) the pinned pavo Rails dashboard from inputs.pavo into ~/.local/share/pavo; installs an auto-bootstrapping ~/.local/bin/pavo launcher; no options (pure config module); oryp6/M1/M5
   cerebrum.nix                     # Resolves store-built cerebrum-mcp binary; registers MCP server + tools (oryp6/M1/M5)
   choragos.nix                     # Resolves store-built choragos-mcp binary; registers choragos_run_plan MCP tool + `choragos` CLI wrapper; programs.choragos.defaultProfile option (per-machine model profile) (oryp6/M1/M5)
   claude.nix                       # Deploys ~/.claude/CLAUDE.md + skills from agora flake input (Claude Code config; M1/M5 only)
@@ -265,6 +266,7 @@ home.packages = with pkgs; [
 | `sccache` | Package + env (`RUSTC_WRAPPER`, `CARGO_INCREMENTAL`) | `modules/sccache.nix` | Local-only Rust/C++ compiler cache; all machines |
 | `watchexec` | Package | `modules/athenaeum.nix` | Cross-platform file watcher; drives the corpus reingest; oryp6 + M1 + M5 |
 | `athenaeum-watch` | `systemd.user.services` (Linux) / `launchd.agents` (Darwin) | `modules/machines/{oryp6,m1,m5}.nix` | Watches `~/Documents/corpus`; runs `athenaeum-ingest` on change |
+| `pavo` | Launcher (`home.file`) + activation deploy | `modules/pavo.nix` | argus companion Rails dashboard; `~/.local/bin/pavo` runs `nix develop . --command bin/dev` in `~/.local/share/pavo` (dev mode, http://localhost:3000); auto-bootstraps gems on first run; oryp6 + M1 + M5 |
 | `cerebrum` | MCP server (via `cerebrum-wrapped`) | `modules/cerebrum.nix` | Two-tier agent memory (Synapse + Cortex); all machines; all agents; lazy Ollama startup |
 | `gh` | Program (`programs.gh`) | `modules/dev-tools.nix` | GitHub CLI; oryp6 + M1 + M5 |
 | `apm` | Package (`apm-cli`) | `modules/dev-tools.nix` | Microsoft Agent Package Manager; prebuilt GitHub Release binary pinned to v0.26.0; oryp6 + M1 + M5 |
@@ -280,6 +282,7 @@ home.packages = with pkgs; [
 | `nixgl` | `github:guibou/nixGL` | Overlay applied on Linux only; never on Darwin |
 | `ai-coding` | `github:vansweej/ai-coding` | Two-phase Nix derivation; `node_modules` baked in; pinned in `flake.lock` |
 | `athenaeum` | `github:vansweej/athenaeum-mcp` | Built by Nix into a store binary (mirrors `ai-coding`); `inputs.nixpkgs.follows = "nixpkgs"`; updated via `nix flake update athenaeum` |
+| `pavo` | `github:vansweej/pavo` | Ruby on Rails argus-companion dashboard; keeps its own `nixos-24.11` pin (NO `inputs.nixpkgs.follows` — Ruby 3.4 + native gems on unstable risks breakage); consumed as a system-independent source tree (no `packages.<system>`); updated via `nix flake update pavo` |
 | `cerebrum` | `github:vansweej/cerebrum-mcp` | Two-tier memory MCP server; `inputs.nixpkgs.follows = "nixpkgs"`; updated via `nix flake update cerebrum` |
 
 The `nixgl.overlay` is conditionally applied in `mkHome` based on `isDarwin`,
@@ -293,6 +296,62 @@ binary is launched with `cwd` set to `~/.local/share/athenaeum` (created by per-
 `home.activation` scripts), so the server's relative `db_path` (`./data/athenaeum`)
 resolves to a writable location outside the Nix store. Existing ingested data is not
 migrated on switch — re-ingest after deploying.
+
+### pavo dashboard
+
+**Deployment, not checkout.** pavo is copied from the pinned `inputs.pavo` store
+path into writable `~/.local/share/pavo` on every `home-manager switch` when the
+source store path changed. It is **not** a git checkout — develop pavo separately
+in a visible directory home-manager does not manage. Update it with
+`nix flake update pavo && home-manager switch`. `nix flake lock` was used only to
+add the initial lock node; use `nix flake update pavo` for subsequent bumps.
+
+**Launcher + auto-bootstrap.** `~/.local/bin/pavo` runs
+`cd ~/.local/share/pavo && nix develop . --command bin/dev` in development mode.
+On first run, or after a pavo update, it first runs `bin/setup` to install gems.
+Bootstrap belongs to the launcher, never activation, because Bundler needs network
+and offline switches must not fail. The first run can take 5–15+ minutes to fetch
+the nixos-24.11 toolchain and bundle gems.
+
+**Toolchain source.** The Ruby toolchain comes from pavo's own devShell via runtime
+`nix develop`; this repository does not rebuild the Ruby environment from its own
+nixpkgs.
+
+**Two stamps.** The activation stamp `~/.local/state/pavo/source-stamp` records
+which source store path is deployed. The launcher stamp
+`~/.local/share/pavo/.gem/.bootstrapped-src` records which source store path has
+been bundled. They are independent and both required. The activation stamp lives
+outside the deploy directory so `rsync --delete` cannot delete it; the launcher
+stamp lives inside rsync-excluded `.gem/` so it survives re-syncs.
+
+**State preservation.** Activation uses
+`rsync -a --delete --chmod=Du+rwx,Fu+rw` with four excludes: `.gem/`,
+`db/*.sqlite3`, `log/`, and `tmp/`. `--delete` does not remove receiver-side paths
+matched by `--exclude` — that would require `--delete-excluded`, which must never
+be added — so those state paths survive a re-sync. `vendor/` is tracked and syncs
+normally.
+
+**Recovery.** To recover from a failed or partial bootstrap, run
+`rm -rf ~/.local/share/pavo/.gem`. This clears both the bundle and its sentinel
+atomically. The launcher writes the stamp only after `bin/setup` succeeds, so an
+interrupted setup has no stamp and the next `pavo` run correctly retries; a
+partially populated `.gem` cannot wedge deployment.
+
+**Ledger.** pavo reads the argus ledger through `ARGUS_LEDGER_DIR`, then
+`$XDG_DATA_HOME/argus`, then `~/.local/share/argus`. argus writes the same default,
+so configuration is normally unnecessary. If argus has never run, the dashboard is
+empty; this is expected, not a bug. Its SQLite database is a disposable projection
+that can be rebuilt from the JSONL ledger.
+
+**Port collision.** `bin/dev` binds `:3000`; a second pavo process, or another
+server already on that port, fails to bind. The v1 launcher deliberately takes no
+lock.
+
+**Future service-ification.** A future local systemd/launchd service should invoke
+the launcher directly (`~/.local/bin/pavo` or `${pavoLauncher}/bin/pavo`): it is a
+single flat argv token encapsulating `cd` plus `nix develop`. Do not pass a
+`cd ... && exec ...` string as `ExecStart`. `systemd.*` must never appear in
+`common.nix` or `darwin.nix`.
 
 The `cerebrum` input is updated with `nix flake update cerebrum`. The store-built
 wrapped binary creates `~/.local/share/cerebrum` on first run and cd's into it, so
