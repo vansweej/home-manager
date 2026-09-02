@@ -29,9 +29,9 @@ let
     # No "warn but continue" branch: bin/dev needs foreman/overmind (a Gemfile
     # gem absent from the devShell buildInputs), so continuing without a bundle
     # yields a confusing missing-executable crash.
-    if [ ! -f "$stamp" ]; then
-      echo "pavo: first run — fetching the nixos-24.11 toolchain and installing gems." >&2
-      echo "pavo: this can take 5-15 minutes and only happens once (or after a pavo update)." >&2
+    if [ ! -f "$stamp" ] || [ "$(${pkgs.coreutils}/bin/cat "$stamp")" != "${pavoSrc}" ]; then
+      echo "pavo: bootstrapping (first run or pavo updated) — fetching the nixos-24.11 toolchain and installing gems." >&2
+      echo "pavo: this can take 5-15 minutes and only happens once per pavo source change." >&2
       nix develop . --command bin/setup
       # Write the launcher stamp ONLY after bin/setup succeeds, so an interrupted
       # setup leaves no stamp and the next run correctly re-triggers setup.
