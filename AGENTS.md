@@ -297,6 +297,26 @@ binary is launched with `cwd` set to `~/.local/share/athenaeum` (created by per-
 resolves to a writable location outside the Nix store. Existing ingested data is not
 migrated on switch — re-ingest after deploying.
 
+The `cerebrum` input is updated with `nix flake update cerebrum`. The store-built
+wrapped binary creates `~/.local/share/cerebrum` on first run and cd's into it, so
+no activation script or cwd pinning is needed. Data persists as a LanceDB table at
+`~/.local/share/cerebrum/data/cerebrum/memories.lance`. The shipped binary uses
+real Ollama embeddings (lazy-initialized on first `remember()`/`recall()` call) — Ollama
+is contacted only when needed, avoiding cold-start hangs during MCP initialization.
+Tools (`cerebrum_remember`, `cerebrum_recall`, `cerebrum_memorize`,
+`cerebrum_forget`, `cerebrum_end_session`, `cerebrum_recall_by_scope`) are enabled
+globally, so agents **without** a per-agent `tools` allowlist (e.g. `build` and the
+subagents) get them by default. However, OpenCode treats a per-agent `tools` map as
+an allowlist for MCP tools: any MCP tool not named in that map is dropped from that
+agent. Because `athenaeum.nix` gives the six thinking agents (`coordinator`, `brainstorm`, `spar`,
+`teach`, `plan`, `explore`) an `athenaeum*` allowlist, `cerebrum.nix` must re-assert
+`cerebrum*` on those same agents or cerebrum silently disappears from them. This is
+done via the `agent` block in `programs.cerebrum.opencodeOverlay`, which
+`recursiveUpdate` deep-merges into the athenaeum `tools` maps (cerebrum applied last
+in every machine module). Per-agent memory isolation via the `recall_by_scope` tool's
+`agent:<id>` scope is supported by the server but not yet configured — all memories
+currently land in the `global` scope.
+
 ### pavo dashboard
 
 **Deployment, not checkout.** pavo is copied from the pinned `inputs.pavo` store
@@ -352,26 +372,6 @@ the launcher directly (`~/.local/bin/pavo` or `${pavoLauncher}/bin/pavo`): it is
 single flat argv token encapsulating `cd` plus `nix develop`. Do not pass a
 `cd ... && exec ...` string as `ExecStart`. `systemd.*` must never appear in
 `common.nix` or `darwin.nix`.
-
-The `cerebrum` input is updated with `nix flake update cerebrum`. The store-built
-wrapped binary creates `~/.local/share/cerebrum` on first run and cd's into it, so
-no activation script or cwd pinning is needed. Data persists as a LanceDB table at
-`~/.local/share/cerebrum/data/cerebrum/memories.lance`. The shipped binary uses
-real Ollama embeddings (lazy-initialized on first `remember()`/`recall()` call) — Ollama
-is contacted only when needed, avoiding cold-start hangs during MCP initialization.
-Tools (`cerebrum_remember`, `cerebrum_recall`, `cerebrum_memorize`,
-`cerebrum_forget`, `cerebrum_end_session`, `cerebrum_recall_by_scope`) are enabled
-globally, so agents **without** a per-agent `tools` allowlist (e.g. `build` and the
-subagents) get them by default. However, OpenCode treats a per-agent `tools` map as
-an allowlist for MCP tools: any MCP tool not named in that map is dropped from that
-agent. Because `athenaeum.nix` gives the six thinking agents (`coordinator`, `brainstorm`, `spar`,
-`teach`, `plan`, `explore`) an `athenaeum*` allowlist, `cerebrum.nix` must re-assert
-`cerebrum*` on those same agents or cerebrum silently disappears from them. This is
-done via the `agent` block in `programs.cerebrum.opencodeOverlay`, which
-`recursiveUpdate` deep-merges into the athenaeum `tools` maps (cerebrum applied last
-in every machine module). Per-agent memory isolation via the `recall_by_scope` tool's
-`agent:<id>` scope is supported by the server but not yet configured — all memories
-currently land in the `global` scope.
 
 ### Running bulk ingest
 
