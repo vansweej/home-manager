@@ -195,10 +195,11 @@ Manages the cerebrum-mcp MCP server registration for those machines.
 
 | Key | Value | Description |
 |---|---|---|
-| `mcp.cerebrum` | MCP server block | Registers the store-built `cerebrum` binary (from the `cerebrum` flake input) as a `type: "local"` server. The wrapped binary creates `~/.local/share/cerebrum` on first run and cd's into it, so the relative `./data/cerebrum` db_path resolves to a writable location outside the Nix store. |
+| `mcp.cerebrum` | MCP server block | Registers the store-built `cerebrum` binary (from the `cerebrum` flake input) as a `type: "local"` server. The binary self-locates its store absolutely under `~/.local/share/cerebrum/data/cerebrum`, so no cwd pinning is required. |
 
 The server's `command` is the absolute store path of the store-built binary
-(`${cerebrumPkg}/bin/cerebrum`). No `cwd` pinning is needed — the wrapper handles it.
+(`${cerebrumPkg}/bin/cerebrum`). No `cwd` pinning is needed — the binary self-locates
+its store.
 
 ### Lazy Ollama Startup
 
@@ -228,7 +229,7 @@ allowlist for MCP tools:
 
 - **Data Directory:** `~/.local/share/cerebrum/`
 - **LanceDB Store:** `~/.local/share/cerebrum/data/cerebrum/memories.lance`
-- **Created on first run:** The wrapped binary creates the directory automatically
+- **Created on first run:** The binary creates the directory automatically
 
 For operational checks (verifying tools are registered, health checks, smoke test,
 and troubleshooting), see the [cerebrum operational runbook](cerebrum.md).

@@ -267,7 +267,7 @@ home.packages = with pkgs; [
 | `watchexec` | Package | `modules/athenaeum.nix` | Cross-platform file watcher; drives the corpus reingest; oryp6 + M1 + M5 |
 | `athenaeum-watch` | `systemd.user.services` (Linux) / `launchd.agents` (Darwin) | `modules/machines/{oryp6,m1,m5}.nix` | Watches `~/Documents/corpus`; runs `athenaeum-ingest` on change |
 | `pavo` | Launcher (`home.file`) + activation deploy | `modules/pavo.nix` | argus companion Rails dashboard; `~/.local/bin/pavo` runs `nix develop . --command bin/dev` in `~/.local/share/pavo` (dev mode, http://localhost:3000); auto-bootstraps gems on first run or after a pavo update; oryp6 + M1 + M5 |
-| `cerebrum` | MCP server (via `cerebrum-wrapped`) | `modules/cerebrum.nix` | Two-tier agent memory (Synapse + Cortex); all machines; all agents; lazy Ollama startup |
+| `cerebrum` | MCP server (bare binary via `programs.cerebrum.binPath`) | `modules/cerebrum.nix` | Two-tier agent memory (Synapse + Cortex); all machines; all agents; lazy Ollama startup |
 | `gh` | Program (`programs.gh`) | `modules/dev-tools.nix` | GitHub CLI; oryp6 + M1 + M5 |
 | `apm` | Package (`apm-cli`) | `modules/dev-tools.nix` | Microsoft Agent Package Manager; prebuilt GitHub Release binary pinned to v0.26.0; oryp6 + M1 + M5 |
 
@@ -298,8 +298,9 @@ resolves to a writable location outside the Nix store. Existing ingested data is
 migrated on switch — re-ingest after deploying.
 
 The `cerebrum` input is updated with `nix flake update cerebrum`. The store-built
-wrapped binary creates `~/.local/share/cerebrum` on first run and cd's into it, so
-no activation script or cwd pinning is needed. Data persists as a LanceDB table at
+binary self-locates its LanceDB store in-binary (`XDG_DATA_HOME`, else
+`~/.local/share`), so no activation script, dataDir option, or cwd pinning is
+needed. Data persists as a LanceDB table at
 `~/.local/share/cerebrum/data/cerebrum/memories.lance`. The shipped binary uses
 real Ollama embeddings (lazy-initialized on first `remember()`/`recall()` call) — Ollama
 is contacted only when needed, avoiding cold-start hangs during MCP initialization.
