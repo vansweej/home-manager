@@ -32,6 +32,9 @@
       url = "github:vansweej/argus";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    pavo = {
+      url = "github:vansweej/pavo";
+    };
   };
 
   outputs =

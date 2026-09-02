@@ -371,6 +371,40 @@
         "type": "github"
       }
     },
+    "nixpkgs_4": {
+      "locked": {
+        "lastModified": 1751274312,
+        "narHash": "sha256-/bVBlRpECLVzjV19t5KMdMFWSwKLtb5RyXdjz3LJT+g=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "50ab793786d9de88ee30ec4e4c24fb4236fc2674",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-24.11",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "pavo": {
+      "inputs": {
+        "nixpkgs": "nixpkgs_4"
+      },
+      "locked": {
+        "lastModified": 1788279034,
+        "narHash": "sha256-vzvz3wiPRiCR+NsF+90PkmW6ABjkDO7RNQiT7uhHVrg=",
+        "owner": "vansweej",
+        "repo": "pavo",
+        "rev": "5793add01656a2f474d214747ba9db88984d3ff6",
+        "type": "github"
+      },
+      "original": {
+        "owner": "vansweej",
+        "repo": "pavo",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "agora": "agora",
@@ -381,7 +415,8 @@
         "choragos": "choragos",
         "home-manager": "home-manager",
         "nixgl": "nixgl",
-        "nixpkgs": "nixpkgs_3"
+        "nixpkgs": "nixpkgs_3",
+        "pavo": "pavo"
       }
     },
     "rust-overlay": {
