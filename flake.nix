@@ -34,6 +34,7 @@
     };
     pavo = {
       url = "github:vansweej/pavo";
+      flake = false;
     };
   };
 

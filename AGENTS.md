@@ -282,7 +282,7 @@ home.packages = with pkgs; [
 | `nixgl` | `github:guibou/nixGL` | Overlay applied on Linux only; never on Darwin |
 | `ai-coding` | `github:vansweej/ai-coding` | Two-phase Nix derivation; `node_modules` baked in; pinned in `flake.lock` |
 | `athenaeum` | `github:vansweej/athenaeum-mcp` | Built by Nix into a store binary (mirrors `ai-coding`); `inputs.nixpkgs.follows = "nixpkgs"`; updated via `nix flake update athenaeum` |
-| `pavo` | `github:vansweej/pavo` | Ruby on Rails argus-companion dashboard; keeps its own `nixos-24.11` pin (NO `inputs.nixpkgs.follows` — Ruby 3.4 + native gems on unstable risks breakage); consumed as a system-independent source tree (no `packages.<system>`); updated via `nix flake update pavo` |
+| `pavo` | `github:vansweej/pavo` | Ruby on Rails argus-companion dashboard; consumed as a plain source tree (`flake = false`); its devShell is resolved at runtime from the copied `flake.lock` in the deploy dir, so this repo never evaluates pavo's outputs; keeps its own `nixos-24.11` pin (NO `inputs.nixpkgs.follows` — Ruby 3.4 + native gems on unstable risks breakage); updated via `nix flake update pavo` |
 | `cerebrum` | `github:vansweej/cerebrum-mcp` | Two-tier memory MCP server; `inputs.nixpkgs.follows = "nixpkgs"`; updated via `nix flake update cerebrum` |
 
 The `nixgl.overlay` is conditionally applied in `mkHome` based on `isDarwin`,
