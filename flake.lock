@@ -374,11 +374,11 @@
     "pavo": {
       "flake": false,
       "locked": {
-        "lastModified": 1788421735,
-        "narHash": "sha256-TnPMQQu6VkzKEgM+ay55d40xf74urwrlTzI1qLNk7dA=",
+        "lastModified": 1788427709,
+        "narHash": "sha256-0eopoGe04EPfcrpBwHG0GtCtrngk+UohXBo/7oq+m+Q=",
         "owner": "vansweej",
         "repo": "pavo",
-        "rev": "ed84e3fe074ca9c73111a843ed7401cd0fabfe3e",
+        "rev": "72682956c3685a3be26a2e22c258f2312d23ed4e",
         "type": "github"
       },
       "original": {
