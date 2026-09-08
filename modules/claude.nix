@@ -72,8 +72,7 @@ let
 in
 {
   # ── Dotfiles ────────────────────────────────────────────────────────────────
-  # Deploys ~/.claude/skills/<name>/, ~/.claude/CLAUDE.md, and the agora-owned
-  # local settings override.
+  # Deploys ONLY ~/.claude/skills/<name>/ and ~/.claude/CLAUDE.md.
   #
   # CRITICAL: ~/.claude/settings.json is DELIBERATELY NOT declared here. It
   # is corporate Bedrock configuration (AWS_PROFILE, ANTHROPIC_DEFAULT_*_MODEL
@@ -90,11 +89,6 @@ in
     # primitive with its frontmatter stripped (see stripFrontmatter above).
     ".claude/CLAUDE.md".text =
       stripFrontmatter (claudeDir + "/clients/claude/.apm/instructions/claude.instructions.md");
-    # Claude Code merges this override over its corporate-managed settings.json.
-    # Keep the Bedrock configuration in settings.json outside Home Manager's
-    # ownership while supplying the agora workflow's permission allow-list.
-    ".claude/settings.local.json".source =
-      claudeDir + "/clients/claude/settings.local.json";
   }
   // skillEntries
   // agentEntries;

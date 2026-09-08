@@ -86,7 +86,7 @@ lets `oryp6`'s x86_64-linux config evaluate on a darwin host without a
 cross-builder. Pure Nix evaluation has no such requirement; only real
 derivations (`pkgs.runCommand`, etc.) do.
 
-## The `settings.json` invariant, unchanged
+## The Claude settings invariant
 
 `~/.claude/settings.json` was never declared by `claude.nix` before this
 migration, and nothing about the migration changes that. It remains
@@ -98,3 +98,11 @@ declaring `settings.json` is sufficient to leave it untouched — the same
 guarantee applies identically to a colleague's `apm install`, since the
 Claude apm package ships zero hooks (the one primitive type that would
 otherwise cause apm to write into `settings.json`).
+
+Do not deploy `~/.claude/settings.local.json`: Claude Code supports local
+settings only as a project file (`<repo>/.claude/settings.local.json`), not a
+user-home override. On Jan's managed installation, prompt-free MCP permissions
+also cannot be configured here because the enterprise managed-settings plist
+takes precedence. The enterprise policy must allow the exact registered server
+prefixes; see agora's `docs/claude-setup.md` for the current list and the
+procedure for future MCP servers.
