@@ -25,7 +25,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     agora = {
-      url = "github:vansweej/agora/feat/workflow-explore-pointer-rule";
+      url = "github:vansweej/agora";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     argus = {
