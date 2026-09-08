@@ -29,7 +29,7 @@ let
   );
 in
 {
-  imports = [ ../argus.nix ../athenaeum.nix ../cerebrum.nix ../choragos.nix ../dev-tools.nix ];
+  imports = [ ../argus.nix ../pavo.nix ../athenaeum.nix ../cerebrum.nix ../choragos.nix ../dev-tools.nix ];
 
   # oryp6 defaults to the free OpenCode Zen profile for both choragos and the
   # raw pipeline CLI / /pipeline tool (see AI_CODING_MODEL_PROFILE below).

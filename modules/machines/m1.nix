@@ -29,7 +29,7 @@ let
 in
 {
   # M1 MacBook-specific configuration.
-  imports = [ ../argus.nix ../athenaeum.nix ../cerebrum.nix ../choragos.nix ../claude.nix ../claude-mcp.nix ../dev-tools.nix ];
+  imports = [ ../argus.nix ../pavo.nix ../athenaeum.nix ../cerebrum.nix ../choragos.nix ../claude.nix ../claude-mcp.nix ../dev-tools.nix ];
 
   # Override the shared opencode.json (deployed by opencode.nix) with a static
   # file that merges the athenaeum MCP overlay onto the upstream config.

@@ -58,6 +58,7 @@ in
 {
   imports = [
     ../argus.nix
+    ../pavo.nix
     ../athenaeum.nix
     ../cerebrum.nix
     ../choragos.nix

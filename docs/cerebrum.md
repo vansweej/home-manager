@@ -18,7 +18,7 @@ Cerebrum is a two-tier agent memory subsystem deployed as a Model Context Protoc
 
 - **Data Directory:** `~/.local/share/cerebrum/`
 - **LanceDB Store:** `~/.local/share/cerebrum/data/cerebrum/memories.lance`
-- **Created on first run:** The wrapped binary creates the directory automatically
+- **Created on first run:** The binary creates the directory automatically
 
 ---
 

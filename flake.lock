@@ -51,11 +51,11 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1787755279,
-        "narHash": "sha256-uTRrfafkUVxobbMNSQgNcn79BGrnz+5avw0yFJxgyTE=",
+        "lastModified": 1788273657,
+        "narHash": "sha256-oZDKcgI0wiRRYTjDgUL9uQ5enz7p4QC11aaswWI9uN8=",
         "owner": "vansweej",
         "repo": "argus",
-        "rev": "507eb2787c1f2af455206271794525f4865b07c3",
+        "rev": "1d3ea8adb86eb97949385a168a35d3ba452c2d2e",
         "type": "github"
       },
       "original": {
@@ -371,6 +371,22 @@
         "type": "github"
       }
     },
+    "pavo": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1788427709,
+        "narHash": "sha256-0eopoGe04EPfcrpBwHG0GtCtrngk+UohXBo/7oq+m+Q=",
+        "owner": "vansweej",
+        "repo": "pavo",
+        "rev": "72682956c3685a3be26a2e22c258f2312d23ed4e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "vansweej",
+        "repo": "pavo",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "agora": "agora",
@@ -381,7 +397,8 @@
         "choragos": "choragos",
         "home-manager": "home-manager",
         "nixgl": "nixgl",
-        "nixpkgs": "nixpkgs_3"
+        "nixpkgs": "nixpkgs_3",
+        "pavo": "pavo"
       }
     },
     "rust-overlay": {
