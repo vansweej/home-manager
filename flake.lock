@@ -8,15 +8,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1788245990,
-        "narHash": "sha256-gwMuPoeEW2CnykKUdEdrxpphJq1GiuOt3BSMKX4h9Dw=",
+        "lastModified": 1788871470,
+        "narHash": "sha256-+CoQMO7NhAUSXfcqxTFcv8uE8hguziwf1eqpfNS38Cc=",
         "owner": "vansweej",
         "repo": "agora",
-        "rev": "5aeb4a7e5117a845820adff2b7147c7a058b5555",
+        "rev": "9c458d646d7e420b8f792f45f870b47d6f8f0d72",
         "type": "github"
       },
       "original": {
         "owner": "vansweej",
+        "ref": "feat/workflow-explore-pointer-rule",
         "repo": "agora",
         "type": "github"
       }
