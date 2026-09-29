@@ -73,11 +73,11 @@
         "rust-overlay": "rust-overlay_2"
       },
       "locked": {
-        "lastModified": 1785841095,
-        "narHash": "sha256-JL9Y2XMiuQBBqeNh2ynw240n7l6b/ToRhwBqE3WepX8=",
+        "lastModified": 1790668809,
+        "narHash": "sha256-nC/OFYjpz1ape4lIEpQeOZ7iKpR2Q5hGIGCXYDxq1EA=",
         "owner": "vansweej",
         "repo": "athenaeum-mcp",
-        "rev": "83d0bcbb7d41492588540f7446a054df4d05af18",
+        "rev": "4bd31d2be554b6133e999cb3574d2d6494fdc172",
         "type": "github"
       },
       "original": {
