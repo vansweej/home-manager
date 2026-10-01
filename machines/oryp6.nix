@@ -5,4 +5,5 @@
   stateVersion = "25.11";
   cudaSupport = true;
   nixGL = true;
+  nvimCheckoutDir = "Projects/home-manager";
 }

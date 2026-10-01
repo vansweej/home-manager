@@ -4,4 +4,5 @@
   homeDirectory = "/Users/janvansweevelt";
   stateVersion = "25.11";
   cudaSupport = false;
+  nvimCheckoutDir = "Projects/home-manager";
 }
