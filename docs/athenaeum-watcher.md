@@ -23,7 +23,7 @@ change it runs the short-lived `athenaeum-ingest` CLI over the whole directory.
 
 | OS | Unit | Manager |
 |---|---|---|
-| Linux (oryp6) | `athenaeum-watch` | `systemd.user.services` |
+| Linux (oryp6, parallels-ubuntu) | `athenaeum-watch` | `systemd.user.services` |
 | macOS (M1, M5) | `athenaeum-watch` | `launchd.agents` |
 
 ## Check it is running
@@ -47,7 +47,7 @@ it is loaded but not currently running.
 
 ## View logs
 
-**Linux** (logs go to the systemd journal):
+**Linux (oryp6, parallels-ubuntu)** (logs go to the systemd journal):
 
 ```bash
 journalctl --user -u athenaeum-watch -f
@@ -79,6 +79,12 @@ up new content on its next `athenaeum_search` — no restart needed.
 systemctl --user start athenaeum-watch
 systemctl --user stop athenaeum-watch
 systemctl --user restart athenaeum-watch
+```
+
+To reload the Home Manager-managed unit after a configuration change:
+
+```bash
+home-manager switch --flake ~/Projects/home-manager#oryp6   # or #parallels-ubuntu
 ```
 
 **macOS:** the agent is managed by home-manager, so the normal way to reload it is a

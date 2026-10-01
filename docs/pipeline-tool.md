@@ -219,6 +219,7 @@ there:
 | Machine | `AI_CODING_MODEL_PROFILE` |
 |---|---|
 | oryp6 | `opencode-free` |
+| parallels-ubuntu | `opencode-free` |
 | M1 | `bedrock-sonnet` |
 | M5 | `bedrock-sonnet` |
 
