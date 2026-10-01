@@ -88,9 +88,13 @@ guest profile, not a bug.
 
 - **OpenCode** itself (the binary this configuration deploys *support
   files* for, not the application).
-- **Ollama**, running at `localhost:11434`, with the `nomic-embed-text` model
-  pulled. Both athenaeum and cerebrum are present on this profile and require
-  it.
+- **Ollama**, running at `localhost:11434`, with both embedding models pulled:
+  athenaeum requires `nomic-embed-text`, while cerebrum requires
+  `qwen3-embedding:0.6b` (1024-dimensional). Run:
+  ```bash
+  ollama pull nomic-embed-text
+  ollama pull qwen3-embedding:0.6b
+  ```
 - `gh auth login` — `gh` is enabled, but not authenticated out of the box.
 - **Your own git identity.** The guest ships with no `programs.git.settings.user`
   — set it yourself (`git config --global user.name` / `user.email`, or add a
