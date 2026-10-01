@@ -301,9 +301,12 @@ The `cerebrum` input is updated with `nix flake update cerebrum`. The store-buil
 binary self-locates its LanceDB store in-binary (`XDG_DATA_HOME`, else
 `~/.local/share`), so no activation script, dataDir option, or cwd pinning is
 needed. Data persists as a LanceDB table at
-`~/.local/share/cerebrum/data/cerebrum/memories.lance`. The shipped binary uses
+`~/.local/share/cerebrum/data/cerebrum/memories_qwen3.lance`. The shipped binary uses
 real Ollama embeddings (lazy-initialized on first `remember()`/`recall()` call) — Ollama
 is contacted only when needed, avoiding cold-start hangs during MCP initialization.
+The embedding model is `qwen3-embedding:0.6b`, producing 1024-dimensional vectors;
+the store was migrated from the earlier `nomic-embed-text`/768-dim setup via
+`cerebrum-reembed` per cerebrum-mcp ADR 0002.
 Tools (`cerebrum_remember`, `cerebrum_recall`, `cerebrum_memorize`,
 `cerebrum_forget`, `cerebrum_end_session`, `cerebrum_recall_by_scope`) are enabled
 globally, so agents **without** a per-agent `tools` allowlist (e.g. `build` and the

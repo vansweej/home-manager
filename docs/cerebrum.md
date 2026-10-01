@@ -10,14 +10,14 @@ Cerebrum is a two-tier agent memory subsystem deployed as a Model Context Protoc
 - **Cortex Tier:** Persistent long-term memory backed by LanceDB with vector embeddings
 - **Blended Recall:** Unified semantic search across both tiers, ranked by salience
 - **Automatic Promotion:** Memories promoted from Synapse to Cortex based on importance score
-- **Lazy Ollama:** Real embeddings via Ollama HTTP API (nomic-embed-text), contacted only on first `remember()`/`recall()` call
+- **Lazy Ollama:** Real embeddings via Ollama HTTP API (qwen3-embedding:0.6b), contacted only on first `remember()`/`recall()` call
 
 ---
 
 ## Data Location
 
 - **Data Directory:** `~/.local/share/cerebrum/`
-- **LanceDB Store:** `~/.local/share/cerebrum/data/cerebrum/memories.lance`
+- **LanceDB Store:** `~/.local/share/cerebrum/data/cerebrum/memories_qwen3.lance`
 - **Created on first run:** The binary creates the directory automatically
 
 ---
@@ -81,8 +81,8 @@ Cerebrum contacts Ollama lazily on first use. To verify Ollama is available:
 # Check Ollama is running
 curl http://localhost:11434/api/tags
 
-# Verify nomic-embed-text model is available
-ollama list | grep nomic-embed-text
+# Verify qwen3-embedding:0.6b model is available
+ollama list | grep qwen3-embedding:0.6b
 ```
 
 If Ollama is not running or the model is missing:
@@ -92,7 +92,7 @@ If Ollama is not running or the model is missing:
 ollama serve
 
 # In another terminal, pull the model
-ollama pull nomic-embed-text
+ollama pull qwen3-embedding:0.6b
 ```
 
 ---
@@ -153,7 +153,7 @@ home-manager switch --flake .#<machine>
 
 **Diagnosis:**
 - Ollama is not running or not responding at `http://localhost:11434`
-- The nomic-embed-text model is not loaded (cold-start delay)
+- The qwen3-embedding:0.6b model is not loaded (cold-start delay)
 
 **Solution:**
 ```bash
@@ -164,10 +164,10 @@ curl http://localhost:11434/api/tags
 ollama serve
 
 # 3. Verify the model is available
-ollama list | grep nomic-embed-text
+ollama list | grep qwen3-embedding:0.6b
 
 # 4. If not available, pull it
-ollama pull nomic-embed-text
+ollama pull qwen3-embedding:0.6b
 
 # 5. Retry the operation (first call may be slow as model loads)
 ```
@@ -177,16 +177,16 @@ ollama pull nomic-embed-text
 **Symptom:** `remember()` or `recall()` returns a validation error about embedding dimension.
 
 **Diagnosis:**
-- The Ollama model returned embeddings with an unexpected dimension (e.g., 384 instead of 768)
+- The Ollama model returned embeddings with an unexpected dimension (e.g., 384 instead of 1024)
 - The configured `embedding_dim` in the server doesn't match the model output
 
 **Solution:**
 ```bash
 # 1. Check the model's actual dimension
-ollama show nomic-embed-text | grep embedding_dim
+ollama show qwen3-embedding:0.6b | grep embedding_dim
 
-# 2. If it doesn't match 768, either:
-#    a. Switch to a model that produces 768-dimensional embeddings
+# 2. If it doesn't match 1024, either:
+#    a. Switch to a model that produces 1024-dimensional embeddings
 #    b. Update the cerebrum config to match the model's dimension
 
 # 3. Wipe the old LanceDB schema (incompatible with new dimension)
@@ -244,7 +244,7 @@ When Cerebrum starts:
 
 This lazy startup pattern avoids blocking the MCP initialization timeout, even if Ollama is warming up a model.
 
-**⚠️ Important:** If you remove the `nomic-embed-text` model (e.g., `ollama rm nomic-embed-text`) while an old Cerebrum binary is still deployed, the old binary will crash on startup because it still contains the blocking warmup probe. To avoid this during cold-start testing:
+**⚠️ Important:** If you remove the `qwen3-embedding:0.6b` model (e.g., `ollama rm qwen3-embedding:0.6b`) while an old Cerebrum binary is still deployed, the old binary will crash on startup because it still contains the blocking warmup probe. To avoid this during cold-start testing:
 1. Complete `home-manager switch --flake .#<machine>` to deploy the new lazy binary
 2. Then remove the model for testing
 3. Restart OpenCode — the new binary will initialize successfully without pre-warming
@@ -275,7 +275,7 @@ If Ollama becomes unavailable after initialization:
 First embedding request may be slow (10–30 seconds) as Ollama loads the model. Subsequent requests are typically 100–500ms.
 
 **To reduce cold-start latency:**
-1. Pre-load the model: `ollama pull nomic-embed-text` before starting Cerebrum
+1. Pre-load the model: `ollama pull qwen3-embedding:0.6b` before starting Cerebrum
 2. Increase Ollama's memory allocation if available
 3. Use a faster machine or GPU acceleration (if available)
 

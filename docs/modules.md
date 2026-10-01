@@ -228,7 +228,8 @@ allowlist for MCP tools:
 ### Data Location
 
 - **Data Directory:** `~/.local/share/cerebrum/`
-- **LanceDB Store:** `~/.local/share/cerebrum/data/cerebrum/memories.lance`
+- **LanceDB Store:** `~/.local/share/cerebrum/data/cerebrum/memories_qwen3.lance`
+- **Embedding Model:** `qwen3-embedding:0.6b`, producing 1024-dimensional vectors
 - **Created on first run:** The binary creates the directory automatically
 
 For operational checks (verifying tools are registered, health checks, smoke test,
