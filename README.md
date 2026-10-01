@@ -8,7 +8,6 @@ for multiple machines, managed from a single repository.
 | `oryp6` | Oryx Pro 6 | x86_64-linux |
 | `M1` | MacBook (work, retiring) | aarch64-darwin |
 | `M5` | MacBook (work) | aarch64-darwin |
-| `parallels` | Parallels Linux VM | x86_64-linux |
 | `parallels-ubuntu` | Parallels Ubuntu VM | aarch64-linux |
 
 ## What this manages

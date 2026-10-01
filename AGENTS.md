@@ -76,7 +76,7 @@ configured. C/C++ launcher integration (`CMAKE_*_COMPILER_LAUNCHER`, autotools
 `CC`/`CXX`) and future CUDA `nvcc` caching are left to per-project configuration.
 
 `dev-tools.nix` is imported only by the three primary machines (oryp6, M1, M5) —
-not the `parallels*` test beds. It enables `programs.gh` and installs `apm`
+not the `parallels-ubuntu` test bed. It enables `programs.gh` and installs `apm`
 (Microsoft's Agent Package Manager) from a hash-pinned GitHub Release binary via
 `fetchurl`. The binary is a prebuilt PyInstaller bundle with no `autoPatchelfHook`
 step, because all three targets are FHS/macOS (oryp6 is Pop!_OS with glibc >= 2.35;

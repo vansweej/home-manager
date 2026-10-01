@@ -182,8 +182,8 @@ Three machines (oryp6, M5, M1) now override it — folding the athenaeum-mcp,
 cerebrum-mcp, and choragos overlays (from the shared `modules/athenaeum.nix`,
 `modules/cerebrum.nix`, and `modules/choragos.nix`) into a single
 `lib.recursiveUpdate` chain, with permissions always inherited from upstream. M5
-additionally folds its Ollama provider into the same merge. Parallels (and
-parallels-ubuntu) inherits the upstream file unchanged.
+additionally folds its Ollama provider into the same merge. parallels-ubuntu
+inherits the upstream file unchanged.
 
 ```mermaid
 graph LR
@@ -200,7 +200,6 @@ graph LR
     ON -->|"lib.mkForce\n+ athenaeum + cerebrum + choragos overlays"| OR["oryp6"]
     ON -->|"lib.mkForce\n+ athenaeum + cerebrum + choragos overlays"| M1["M1"]
     ON -->|"lib.mkForce\n+ Ollama provider<br/>+ athenaeum + cerebrum + choragos overlays"| M5["M5"]
-    ON -->|"inherits as-is"| PP["parallels"]
     ON -->|"inherits as-is"| PU["parallels-ubuntu"]
 
     AE -.->|config.programs.*| OR
