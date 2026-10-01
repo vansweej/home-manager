@@ -36,6 +36,11 @@ in
   # Overrides the shared bedrock-sonnet default from modules/choragos.nix.
   programs.choragos.defaultProfile = "opencode-free";
 
+  programs.git.settings.user = {
+    name = "Jan Van Sweevelt";
+    email = "vansweej@gmail.com";
+  };
+
   # Override the shared opencode.json (deployed by opencode.nix) with a static
   # file that merges the athenaeum MCP overlay onto the upstream config.
   # NOTE: if ~/.config/opencode/opencode.json already exists as a plain file,

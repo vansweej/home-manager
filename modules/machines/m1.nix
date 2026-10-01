@@ -31,6 +31,11 @@ in
   # M1 MacBook-specific configuration.
   imports = [ ../argus.nix ../pavo.nix ../athenaeum.nix ../cerebrum.nix ../choragos.nix ../claude.nix ../claude-mcp.nix ../dev-tools.nix ];
 
+  programs.git.settings.user = {
+    name = "Jan Van Sweevelt";
+    email = "vansweej@gmail.com";
+  };
+
   # Override the shared opencode.json (deployed by opencode.nix) with a static
   # file that merges the athenaeum MCP overlay onto the upstream config.
   # NOTE: if ~/.config/opencode/opencode.json already exists as a plain file,

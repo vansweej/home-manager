@@ -84,12 +84,6 @@
 
   programs.git = {
     enable = true;
-    settings = {
-      user = {
-        name = "Jan Van Sweevelt";
-        email = "vansweej@gmail.com";
-      };
-    };
   };
 
   programs.neovim = {

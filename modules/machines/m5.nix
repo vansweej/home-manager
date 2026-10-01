@@ -67,6 +67,11 @@ in
     ../dev-tools.nix
   ];
 
+  programs.git.settings.user = {
+    name = "Jan Van Sweevelt";
+    email = "vansweej@gmail.com";
+  };
+
   # M5 MacBook-specific configuration.
 
   home.packages = with pkgs; [
