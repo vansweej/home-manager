@@ -597,7 +597,7 @@ the ai-coding store path is fully preserved:
 | bun.nix goes stale silently | Low | N/A | `postinstall` hook + `checks.bun-nix-fresh` together make this impossible to miss |
 | bun2nix WASM vs native CLI output mismatch | Low (same lockfile, same algorithm) | N/A | Use only native CLI (from `nix develop .`) for both generation and check |
 | bun2nix tag 2.1.2 incompatible with a future bun version | Low | N/A | Pin tag in input; bump deliberately with `nix flake update bun2nix` when bun is bumped in nixpkgs |
-| aarch64-linux (parallels-ubuntu) has no LanceDB prebuild in bun.lock | Known, chosen gap | N/A — not tested in spike | LanceDB will be absent on that platform; parallels-ubuntu is a test bed with no dev-tools deploy. Acceptable. |
+| aarch64-linux (parallels-ubuntu) LanceDB status | Verified working, not a gap | N/A — empirically confirmed | LanceDB (via cerebrum) builds and runs cleanly on aarch64-linux. The actual aarch64-linux obstacle encountered was unrelated to LanceDB: pdfium-render's char-signedness assumption in athenaeum (`c_char` is `u8` on AArch64 Linux, and pdfium-render 0.9.2 hardcoded `as *const i8`), fixed upstream by pdfium-render 0.9.4 and consumed here via the lock-only commit `800f35b`. |
 
 ---
 

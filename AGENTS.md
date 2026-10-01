@@ -31,7 +31,7 @@ modules/
     oryp6.nix                      # oryp6-only: rootless Docker, systemd service; choragos.defaultProfile + AI_CODING_MODEL_PROFILE = opencode-free
     m1.nix                         # M1-only: launchd corpus watcher; AI_CODING_MODEL_PROFILE = bedrock-sonnet
     m5.nix                         # M5-only: Ollama provider config, local agent override; AI_CODING_MODEL_PROFILE = bedrock-sonnet
-    parallels-ubuntu.nix           # parallels-ubuntu-only: placeholder (test bed)
+    parallels-ubuntu.nix           # parallels-ubuntu-only: colleague guest-VM baseline; imports choragos/cerebrum/athenaeum/argus/pavo; gh enabled directly (no dev-tools.nix, apm is broken on aarch64-linux); AI_CODING_MODEL_PROFILE = opencode-free
 opencode/AGENTS.md                 # Machine-wide OpenCode agent instructions
 opencode/skills/*/SKILL.md         # OpenCode skills deployed to ~/.config/opencode/skills/
 opencode/agents/*.md               # OpenCode agents deployed to ~/.config/opencode/agents/
@@ -76,12 +76,27 @@ configured. C/C++ launcher integration (`CMAKE_*_COMPILER_LAUNCHER`, autotools
 `CC`/`CXX`) and future CUDA `nvcc` caching are left to per-project configuration.
 
 `dev-tools.nix` is imported only by the three primary machines (oryp6, M1, M5) —
-not the `parallels-ubuntu` test bed. It enables `programs.gh` and installs `apm`
+not the `parallels-ubuntu` guest profile. It enables `programs.gh` and installs `apm`
 (Microsoft's Agent Package Manager) from a hash-pinned GitHub Release binary via
 `fetchurl`. The binary is a prebuilt PyInstaller bundle with no `autoPatchelfHook`
 step, because all three targets are FHS/macOS (oryp6 is Pop!_OS with glibc >= 2.35;
 M1/M5 are macOS) and run it directly against the host dynamic loader; that hook
-would only be needed if a target ever migrated to NixOS.
+would only be needed if a target ever migrated to NixOS. `parallels-ubuntu`
+enables `gh` directly in its own machine module instead — `apm`'s prebuilt
+binary is broken on aarch64-linux, so `dev-tools.nix` is never imported there.
+
+### Optional-module matrix
+
+| Module | oryp6 | M1 | M5 | parallels-ubuntu |
+|---|---|---|---|---|
+| `choragos.nix` | yes | yes | yes | yes |
+| `cerebrum.nix` | yes | yes | yes | yes |
+| `athenaeum.nix` | yes | yes | yes | yes |
+| `argus.nix` | yes | yes | yes | yes |
+| `pavo.nix` | yes | yes | yes | yes |
+| `dev-tools.nix` (gh + apm) | yes | yes | yes | no (gh enabled directly) |
+| `claude.nix` / `claude-mcp.nix` | no | yes | yes | no |
+| `nvimCheckoutDir` (live-edit nvim symlinks) | yes | yes | yes | no |
 
 Machine identity (`home.username`, `home.homeDirectory`, `home.stateVersion`) is
 injected by the `mkHome` helper in `flake.nix` from the machine metadata file —

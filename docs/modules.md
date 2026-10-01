@@ -24,7 +24,7 @@ Imports `modules/opencode.nix` for all OpenCode configuration.
 | `programs.bash` | Bash with session-vars reload fix |
 | `programs.starship` | Cross-shell prompt; bash integration enabled |
 | `programs.ghostty` | Terminal emulator; font: FiraCode Nerd Font; theme: Night Owl |
-| `programs.git` | User: Jan Van Sweevelt / vansweej@gmail.com |
+| `programs.git` | Enabled without an identity; real-machine identities live in their machine modules |
 | `programs.neovim` | Default editor; aliased as `vim` and `vi` |
 | `programs.home-manager` | Lets Home Manager manage itself |
 
@@ -32,9 +32,19 @@ Imports `modules/opencode.nix` for all OpenCode configuration.
 
 | Destination | Source | Method |
 |---|---|---|
-| `~/.config/nvim/lua/plugins/opencode.lua` | `~/Projects/home-manager/nvim/plugins/opencode.lua` | Live symlink |
-| `~/.config/nvim/lua/plugins/rust.lua` | `~/Projects/home-manager/nvim/plugins/rust.lua` | Live symlink |
-| `~/.config/nvim/lazyvim.json` | `~/Projects/home-manager/nvim/lazyvim.json` | Live symlink |
+| `~/.config/nvim/lua/plugins/opencode.lua` | `${homeDirectory}/${nvimCheckoutDir}/nvim/plugins/opencode.lua` | Live symlink when `nvimCheckoutDir` is set |
+| `~/.config/nvim/lua/plugins/rust.lua` | `${homeDirectory}/${nvimCheckoutDir}/nvim/plugins/rust.lua` | Live symlink when `nvimCheckoutDir` is set |
+| `~/.config/nvim/lazyvim.json` | `${homeDirectory}/${nvimCheckoutDir}/nvim/lazyvim.json` | Live symlink when `nvimCheckoutDir` is set |
+
+`common.nix` emits these three live-edit symlinks with
+`lib.optionalAttrs (meta ? nvimCheckoutDir)`. oryp6, M1, and M5 set
+`nvimCheckoutDir = "Projects/home-manager"`; distributable guest images such
+as `parallels-ubuntu` omit it, so they receive no dangling symlinks to a
+checkout they do not have.
+
+Git is intentionally identity-free in `common.nix`. The real-machine modules
+(oryp6, M1, and M5) each set `programs.git.settings.user` with Jan's identity;
+`parallels-ubuntu` sets none so a colleague supplies their own identity.
 
 ### Activation scripts
 
@@ -138,7 +148,7 @@ store at build time. No `bun install` is needed for it at activation.
 
 ## `modules/athenaeum.nix` — athenaeum-mcp server overlay
 
-Imported by **oryp6, M5, M1** (but not parallels or parallels-ubuntu). Does not write any
+Imported by **oryp6, M5, M1, parallels-ubuntu**. Does not write any
 files — it is a data-only module that declares and assigns the
 `programs.athenaeum.opencodeOverlay` option, which machine modules consume.
 
@@ -178,8 +188,8 @@ existing Ollama provider without a conflicting second definition.
 (so the CLI's relative `./data/athenaeum` db_path resolves to the shared store),
 `--postpone` (no reingest at startup), `--debounce 5s`, and `--on-busy-update queue`.
 `watchexec` is added to `home.packages` here. The actual service unit is registered
-per-machine (systemd on oryp6, launchd on M1/M5), each pinning its working directory
-to `dataDir` as a second cwd guarantee.
+per-machine (systemd on oryp6 and parallels-ubuntu, launchd on M1/M5), each
+pinning its working directory to `dataDir` as a second cwd guarantee.
 
 For operational checks (verifying the unit is running, reading logs, the smoke test,
 and troubleshooting), see the [corpus watcher runbook](athenaeum-watcher.md).
@@ -188,8 +198,9 @@ and troubleshooting), see the [corpus watcher runbook](athenaeum-watcher.md).
 
 ## `modules/cerebrum.nix` — cerebrum-mcp server overlay {#cerebrum-options}
 
-Imported by **oryp6, M5, M1** (via each machine's `imports`, not `common.nix`).
-Manages the cerebrum-mcp MCP server registration for those machines.
+Imported by **oryp6, M5, M1, and parallels-ubuntu** (via each machine's
+`imports`, not `common.nix`). Manages the cerebrum-mcp MCP server registration
+for those machines.
 
 ### What the overlay contains
 
@@ -239,8 +250,8 @@ and troubleshooting), see the [cerebrum operational runbook](cerebrum.md).
 
 ## `modules/choragos.nix` — choragos plan-cycle orchestrator {#choragos-options}
 
-Imported by **oryp6, M5, M1** (via each machine's `imports`, not `common.nix`).
-Provides two things: the `choragos_run_plan` MCP tool — a deterministic
+Imported by **oryp6, M5, M1, and parallels-ubuntu** (via each machine's
+`imports`, not `common.nix`). Provides two things: the `choragos_run_plan` MCP tool — a deterministic
 ai-coding plan-cycle orchestrator (clean-start gate, branch, run, PR-on-green,
 run-ledger) — and a standalone `choragos` CLI wrapper on `PATH`.
 
@@ -278,6 +289,7 @@ machines can diverge without editing this shared module:
 | **M1** | `bedrock-sonnet` (inherited default) | Only AWS Bedrock access available (no direct Anthropic API key) |
 | **M5** | `bedrock-sonnet` (inherited default) | Same as M1 |
 | **oryp6** | `opencode-free` (override) | Free OpenCode Zen profile — set via `programs.choragos.defaultProfile = "opencode-free"` in `modules/machines/oryp6.nix` |
+| **parallels-ubuntu** | `opencode-free` (override) | Colleague guest-VM baseline; matches oryp6 without requiring Bedrock credentials |
 
 The `opencode-free` profile requires `OPENCODE_ZEN_MODEL` (set in
 `modules/opencode.nix` — see its session-variables table). No `OPENCODE_ZEN_API_KEY`
@@ -413,12 +425,20 @@ the same `bedrock-sonnet` default from `modules/choragos.nix`).
 
 ---
 
-## `modules/machines/parallels-ubuntu.nix` — Parallels Ubuntu VM only
+## `modules/machines/parallels-ubuntu.nix` — Parallels Ubuntu VM guest-image baseline
 
-Applied only to the `parallels-ubuntu` profile (`aarch64-linux`, username `parallels`).
+Applied only to the `parallels-ubuntu` profile (`aarch64-linux`, username `parallels`,
+a deliberate distribution convention — see `docs/parallels-ubuntu-guest.md`).
 
-Currently a placeholder. Used as a test bed for the Nix flake-based ai-coding
-setup on `aarch64-linux` before promoting changes to M5 and oryp6.
+Distributable colleague guest-VM baseline. Imports `choragos.nix`, `cerebrum.nix`,
+`athenaeum.nix` (with its systemd corpus watcher), `argus.nix`, and `pavo.nix` —
+the full verified aarch64-linux-capable MCP stack. Enables `gh` directly (no
+`dev-tools.nix`, since `apm`'s prebuilt binary is broken on aarch64-linux) and
+sets `AI_CODING_MODEL_PROFILE` / `programs.choragos.defaultProfile` to
+`opencode-free`. Builds a static merged `opencode.json` from the athenaeum,
+cerebrum, and choragos overlays, mirroring oryp6's pattern. Sets no
+`nvimCheckoutDir` (see `modules/common.nix`) and no git identity — both are
+left for the colleague to supply themselves.
 
 ---
 

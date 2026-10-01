@@ -39,6 +39,7 @@ home-manager options.
 | `stateVersion` | string | Home Manager state version — use `"25.11"` for new machines |
 | `cudaSupport` | bool | Enables CUDA in nixpkgs; only `true` on machines with an NVIDIA GPU |
 | `nixGL` | bool | Optional, default `false`. Set `true` on Linux machines that need the nixGL OpenGL wrapper (e.g. oryp6) |
+| `nvimCheckoutDir` | string | Optional. Set to the relative path of a live checkout of this repo (e.g. `"Projects/home-manager"`) to get `mkOutOfStoreSymlink`'d nvim plugin files for live editing. Omit entirely on guest/distributable images (e.g. `parallels-ubuntu`) to suppress these symlinks — there is no live checkout to point at. |
 
 ## Step 2 — Create the machine module
 
@@ -77,8 +78,11 @@ add machine-specific packages and services as needed.
 - Do **not** put `systemd` config in a Darwin machine module — the `systemd`
   home-manager module does not exist on Darwin and will cause an evaluation error.
 - Do **not** put `launchd` config in a Linux machine module.
-- Universal config (git, neovim, bat, starship, fonts, opencode) belongs in
-  `modules/common.nix`, not here.
+- Universal config (neovim, bat, starship, fonts, opencode) belongs in
+  `modules/common.nix`, not here. **Git identity is per-machine, not
+  universal** — add your own `programs.git.settings.user = { name = ...; email = ...; };`
+  block to your new machine module if you want one (see `modules/machines/oryp6.nix`
+  for the pattern). Guest/distributable images intentionally ship no git identity.
 
 ## Step 3 — Register in `flake.nix`
 
