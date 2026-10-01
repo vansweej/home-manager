@@ -41,7 +41,6 @@
     ".config/nvim/lazyvim.json".source =
       config.lib.file.mkOutOfStoreSymlink
         "${config.home.homeDirectory}/${meta.nvimCheckoutDir}/nvim/lazyvim.json";
-  } // {
   };
 
   # Bootstrap LazyVim starter into ~/.config/nvim on first activation.
