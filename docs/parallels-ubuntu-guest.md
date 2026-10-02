@@ -34,8 +34,14 @@ Do this **before** any install steps below.
    — home-manager only needs the flake, not a fixed checkout path).
 4. Run the switch:
    ```bash
-   home-manager switch --flake .#parallels-ubuntu
+   home-manager switch -b backup --flake .#parallels-ubuntu
    ```
+   The `-b backup` flag is required on this first switch: a freshly created
+   Ubuntu account already has `~/.bashrc` and `~/.profile` copied from
+   `/etc/skel`, and home-manager refuses to clobber them without it. The
+   originals are preserved as `.bashrc.backup` / `.profile.backup`; the flag
+   is only needed for the first switch (subsequent switches are clean, though
+   leaving it on is harmless).
 
 ## opencode.json first-run collision (read before launching OpenCode)
 
@@ -48,12 +54,16 @@ will see an error similar to:
 Existing file '/home/parallels/.config/opencode/opencode.json' is in the way
 ```
 
-**Remedy:** remove or move the offending file, then re-run the switch:
+**Remedy:** the recommended first-run command above
+(`home-manager switch -b backup --flake .#parallels-ubuntu`) already handles
+this case — `-b backup` backs up any file in the way, not just the shell
+dotfiles. If you already ran the switch *without* that flag and hit this
+error, remove or move the offending file manually, then re-run:
 
 ```bash
 rm ~/.config/opencode/opencode.json
 # or: mv ~/.config/opencode/opencode.json ~/.config/opencode/opencode.json.bak
-home-manager switch --flake .#parallels-ubuntu
+home-manager switch -b backup --flake .#parallels-ubuntu
 ```
 
 **Ordering advice:** run `home-manager switch` **before** first launching
@@ -104,10 +114,19 @@ guest profile, not a bug.
 
 ## Troubleshooting
 
-1. **Wrong home directory / switch does nothing useful.** Check that the VM's
+1. **`home-manager switch` fails with "Existing file '/home/parallels/.bashrc'
+   would be clobbered" (and the same for `.profile`).** This is guaranteed on
+   every fresh Ubuntu guest, because `/etc/skel` already provides both files
+   at account creation. Fix: re-run with
+   `home-manager switch -b backup --flake .#parallels-ubuntu`, which moves the
+   originals to `.bashrc.backup` / `.profile.backup` and proceeds. Caveat: if
+   a previous failed attempt already created those `.backup` files,
+   home-manager will refuse to overwrite them too — remove the stale backups
+   or pass a different extension (e.g. `-b bak2`) and re-run.
+2. **Wrong home directory / switch does nothing useful.** Check that the VM's
    Ubuntu user account is named exactly `parallels`. This is the single most
    common setup mistake — see the CRITICAL callout above.
-2. **`home-manager switch` fails with an "existing file is in the way" error
+3. **`home-manager switch` fails with an "existing file is in the way" error
    for `opencode.json`.** See the first-run collision section above: remove
    or move the plain file OpenCode created, then re-run the switch.
 
