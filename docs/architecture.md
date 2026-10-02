@@ -123,7 +123,10 @@ Two activation scripts run on every `home-manager switch`:
 
 `bootstrapNvim` runs **before** `writeBoundary` — the phase where home-manager
 creates `mkOutOfStoreSymlink` symlinks — so nvim symlinks are never dangling on a
-fresh machine's first activation.
+fresh machine's first activation. `common.nix` creates those symlinks only when
+the machine metadata defines `nvimCheckoutDir`; oryp6, M1, and M5 use the
+live-edit checkout, while `parallels-ubuntu` omits the field and gets no
+checkout-dependent nvim files.
 
 `installOpencodeTools` runs after `writeBoundary` and `cp`s each tool from the
 pinned `agora` flake input into `~/.config/opencode/tools/` as a genuine
@@ -178,12 +181,11 @@ invocation surfaces, execution flow, and exit-code handling.
 
 `opencode.json` is the single source of truth for base OpenCode permissions. It
 lives in the `ai-coding` repo and flows through the Nix build into each machine.
-Three machines (oryp6, M5, M1) now override it — folding the athenaeum-mcp,
-cerebrum-mcp, and choragos overlays (from the shared `modules/athenaeum.nix`,
-`modules/cerebrum.nix`, and `modules/choragos.nix`) into a single
-`lib.recursiveUpdate` chain, with permissions always inherited from upstream. M5
-additionally folds its Ollama provider into the same merge. Parallels (and
-parallels-ubuntu) inherits the upstream file unchanged.
+Four machines (oryp6, M5, M1, parallels-ubuntu) now override it — folding the
+athenaeum-mcp, cerebrum-mcp, and choragos overlays (from the shared
+`modules/athenaeum.nix`, `modules/cerebrum.nix`, and `modules/choragos.nix`)
+into a single `lib.recursiveUpdate` chain, with permissions always inherited
+from upstream. M5 additionally folds its Ollama provider into the same merge.
 
 ```mermaid
 graph LR
@@ -200,20 +202,22 @@ graph LR
     ON -->|"lib.mkForce\n+ athenaeum + cerebrum + choragos overlays"| OR["oryp6"]
     ON -->|"lib.mkForce\n+ athenaeum + cerebrum + choragos overlays"| M1["M1"]
     ON -->|"lib.mkForce\n+ Ollama provider<br/>+ athenaeum + cerebrum + choragos overlays"| M5["M5"]
-    ON -->|"inherits as-is"| PP["parallels"]
-    ON -->|"inherits as-is"| PU["parallels-ubuntu"]
+    ON -->|"lib.mkForce\n+ athenaeum + cerebrum + choragos overlays"| PU["parallels-ubuntu"]
 
     AE -.->|config.programs.*| OR
     AE -.->|config.programs.*| M1
     AE -.->|config.programs.*| M5
+    AE -.->|config.programs.*| PU
 
     CE -.->|config.programs.*| OR
     CE -.->|config.programs.*| M1
     CE -.->|config.programs.*| M5
+    CE -.->|config.programs.*| PU
 
     CH -.->|config.programs.*| OR
     CH -.->|config.programs.*| M1
     CH -.->|config.programs.*| M5
+    CH -.->|config.programs.*| PU
 ```
 
 To update permissions for all machines: edit `opencode.json` in `ai-coding`,
@@ -227,9 +231,9 @@ push, then run `nix flake update ai-coding` in this repo and `home-manager switc
 | `home-manager` | `github:nix-community/home-manager` | Follows `nixpkgs` |
 | `nixgl` | `github:guibou/nixGL` | Overlay applied on Linux only; never on Darwin |
 | `ai-coding` | `github:vansweej/ai-coding` | Follows `nixpkgs`. Two-phase Nix derivation: FOD cache + pure `bun install`; `node_modules` baked in. Exports the pipeline/orchestrator monorepo consumed via `AI_CODING_MONOREPO` |
-| `athenaeum` | `github:vansweej/athenaeum-mcp` | Follows `nixpkgs`. Store-built `athenaeum-mcp-server` binary; registered as an MCP server on oryp6/M1/M5 |
-| `cerebrum` | `github:vansweej/cerebrum-mcp` | Follows `nixpkgs`. Store-built `cerebrum` binary; registered as an MCP server on oryp6/M1/M5 |
-| `choragos` | `github:vansweej/choragos` | Follows `nixpkgs`. Store-built `choragos-mcp-server` binary + `choragos` CLI; provides the `choragos_run_plan` plan-cycle orchestrator |
+| `athenaeum` | `github:vansweej/athenaeum-mcp` | Follows `nixpkgs`. Store-built `athenaeum-mcp-server` binary; registered as an MCP server on oryp6/M1/M5/parallels-ubuntu |
+| `cerebrum` | `github:vansweej/cerebrum-mcp` | Follows `nixpkgs`. Store-built `cerebrum` binary; registered as an MCP server on oryp6/M1/M5/parallels-ubuntu |
+| `choragos` | `github:vansweej/choragos` | Follows `nixpkgs`. Store-built `choragos-mcp-server` binary + `choragos` CLI; provides the `choragos_run_plan` plan-cycle orchestrator (oryp6/M1/M5/parallels-ubuntu) |
 | `agora` | `github:vansweej/agora` | Follows `nixpkgs`. Raw source tree for OpenCode agents/skills/commands/tools/bin + Claude Code config; consumed directly (no per-system build) |
 
 The `ai-coding` input exports `packages.${system}.default` — the full source tree

@@ -1,4 +1,4 @@
-{ pkgs, lib, config, inputs, ... }:
+{ pkgs, lib, config, inputs, meta, ... }:
 {
   imports = [
     ./opencode.nix
@@ -23,21 +23,24 @@
   ];
 
   # Home Manager managed dotfiles.
-  home.file = {
+  home.file = lib.optionalAttrs (meta ? nvimCheckoutDir) {
     # Neovim custom plugin files.
     # LazyVim boilerplate (init.lua, lua/config/*.lua) is left unmanaged --
     # bootstrapped once from the LazyVim starter via the activation script below.
     # Uses mkOutOfStoreSymlink so edits in the repo are reflected immediately
     # without re-running home-manager switch.
+    #
+    # These entries power Jan's live-edit nvim workflow and are intentionally
+    # omitted on guest images that set no `nvimCheckoutDir` (e.g. parallels-ubuntu).
     ".config/nvim/lua/plugins/opencode.lua".source =
       config.lib.file.mkOutOfStoreSymlink
-        "${config.home.homeDirectory}/Projects/home-manager/nvim/plugins/opencode.lua";
+        "${config.home.homeDirectory}/${meta.nvimCheckoutDir}/nvim/plugins/opencode.lua";
     ".config/nvim/lua/plugins/rust.lua".source =
       config.lib.file.mkOutOfStoreSymlink
-        "${config.home.homeDirectory}/Projects/home-manager/nvim/plugins/rust.lua";
+        "${config.home.homeDirectory}/${meta.nvimCheckoutDir}/nvim/plugins/rust.lua";
     ".config/nvim/lazyvim.json".source =
       config.lib.file.mkOutOfStoreSymlink
-        "${config.home.homeDirectory}/Projects/home-manager/nvim/lazyvim.json";
+        "${config.home.homeDirectory}/${meta.nvimCheckoutDir}/nvim/lazyvim.json";
   };
 
   # Bootstrap LazyVim starter into ~/.config/nvim on first activation.
@@ -80,12 +83,6 @@
 
   programs.git = {
     enable = true;
-    settings = {
-      user = {
-        name = "Jan Van Sweevelt";
-        email = "vansweej@gmail.com";
-      };
-    };
   };
 
   programs.neovim = {

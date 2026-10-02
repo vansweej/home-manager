@@ -8,17 +8,19 @@ for multiple machines, managed from a single repository.
 | `oryp6` | Oryx Pro 6 | x86_64-linux |
 | `M1` | MacBook (work, retiring) | aarch64-darwin |
 | `M5` | MacBook (work) | aarch64-darwin |
-| `parallels` | Parallels Linux VM | x86_64-linux |
 | `parallels-ubuntu` | Parallels Ubuntu VM | aarch64-linux |
+
+> Deploying `parallels-ubuntu` to a colleague's machine? See the
+> [guest onboarding runbook](docs/parallels-ubuntu-guest.md).
 
 ## What this manages
 
 - **Packages** — ghostty, neovim, bat, starship, bun, htop, tree, fonts
 - **Shell** — bash + starship prompt
-- **Neovim** — LazyVim bootstrapped on first run; custom plugin files symlinked live
+- **Neovim** — LazyVim bootstrapped on first run; custom plugin files symlinked live (oryp6/M1/M5 only, via per-machine `nvimCheckoutDir`)
 - **OpenCode** — agent profiles, skill definitions, pipeline commands and tools
-- **MCP servers** — athenaeum (library search), cerebrum (two-tier memory), and choragos (`choragos_run_plan` plan-cycle orchestrator), registered into OpenCode on oryp6/M1/M5
-- **Model profiles** — per-machine default model profile: `opencode-free` (OpenCode Zen) on oryp6, `bedrock-sonnet` (AWS Bedrock) on M1/M5, via `programs.choragos.defaultProfile` + `AI_CODING_MODEL_PROFILE`
+- **MCP servers** — athenaeum (library search), cerebrum (two-tier memory), and choragos (`choragos_run_plan` plan-cycle orchestrator), registered into OpenCode on oryp6/M1/M5/parallels-ubuntu
+- **Model profiles** — per-machine default model profile: `opencode-free` (OpenCode Zen) on oryp6 and parallels-ubuntu, `bedrock-sonnet` (AWS Bedrock) on M1/M5, via `programs.choragos.defaultProfile` + `AI_CODING_MODEL_PROFILE`
 - **Docker** — rootless daemon via systemd user service (oryp6 only)
 - **Fonts** — FiraCode Nerd Font
 - **ai-coding** — runtime monorepo fetched from GitHub and built into the Nix store; no manual clone needed

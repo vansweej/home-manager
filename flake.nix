@@ -98,7 +98,6 @@
     {
       homeConfigurations."oryp6"            = mkHome ./machines/oryp6.nix            ./modules/machines/oryp6.nix;
       homeConfigurations."M1"               = mkHome ./machines/m1.nix               ./modules/machines/m1.nix;
-      homeConfigurations."parallels"        = mkHome ./machines/parallels.nix        ./modules/machines/parallels.nix;
       homeConfigurations."M5"               = mkHome ./machines/m5.nix               ./modules/machines/m5.nix;
       homeConfigurations."parallels-ubuntu" = mkHome ./machines/parallels-ubuntu.nix ./modules/machines/parallels-ubuntu.nix;
     };
