@@ -65,6 +65,7 @@ in
     ../claude.nix
     ../claude-mcp.nix
     ../dev-tools.nix
+    ../ollama-imagegen.nix
   ];
 
   programs.git.settings.user = {

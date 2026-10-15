@@ -29,7 +29,7 @@ let
 in
 {
   # M1 MacBook-specific configuration.
-  imports = [ ../argus.nix ../pavo.nix ../athenaeum.nix ../cerebrum.nix ../choragos.nix ../claude.nix ../claude-mcp.nix ../dev-tools.nix ];
+  imports = [ ../argus.nix ../pavo.nix ../athenaeum.nix ../cerebrum.nix ../choragos.nix ../claude.nix ../claude-mcp.nix ../dev-tools.nix ../ollama-imagegen.nix ];
 
   programs.git.settings.user = {
     name = "Jan Van Sweevelt";
