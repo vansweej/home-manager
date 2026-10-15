@@ -390,7 +390,9 @@ Applied only to the `M1` profile (`aarch64-darwin`, username `janvansweevelt`).
 Overrides `opencode.json` by merging the athenaeum-mcp overlay from
 `modules/athenaeum.nix` onto the upstream ai-coding config via
 `lib.recursiveUpdate` + `lib.mkForce`. Registers `launchd.agents.athenaeum-watch`
-(the corpus watcher). Otherwise has no machine-specific packages.
+(the corpus watcher). Imports `modules/ollama-imagegen.nix` (frozen Ollama 0.32.5
+image-generation instance, `ollama-imagegen` on `127.0.0.1:11436`); otherwise has
+no machine-specific packages.
 
 Sets `home.sessionVariables.AI_CODING_MODEL_PROFILE = "bedrock-sonnet"` so the
 raw pipeline CLI and `/pipeline` tool default to Bedrock (choragos inherits the
@@ -418,6 +420,7 @@ Overrides three shared defaults with M5-specific values:
 
 - **`launchd.agents.athenaeum-watch`** — registers the corpus watcher (logs to
   `~/.local/share/athenaeum/watch.log`).
+- **`ollama-imagegen`** — imports `modules/ollama-imagegen.nix`: frozen Ollama 0.32.5 image-generation instance on `127.0.0.1:11436`, separate from the daily Ollama.app on `11434` (which the OpenCode `provider.ollama` above points at). See `docs/ollama-imagegen.md`.
 
 Also sets `home.sessionVariables.AI_CODING_MODEL_PROFILE = "bedrock-sonnet"` so
 the raw pipeline CLI and `/pipeline` tool default to Bedrock (choragos inherits
@@ -441,6 +444,33 @@ cerebrum, and choragos overlays, mirroring oryp6's pattern. Sets no
 left for the colleague to supply themselves.
 
 ---
+
+## `modules/ollama-imagegen.nix` — frozen Ollama 0.32.5 image-generation instance
+
+Imported by **M5, M1** only (aarch64-darwin). oryp6 does not get the `ollama-imagegen`
+command and reaches the M5 instance only through `ollama-tunnel`.
+
+A deliberately frozen, hash-pinned Ollama 0.32.5 (`ollama-darwin.tgz`, aarch64-darwin only)
+exposed as the `ollama-imagegen` wrapper on `127.0.0.1:11436` with its own models dir
+(`~/.local/share/ollama-imagegen/models`) and state dir (`~/.local/state/ollama-imagegen`).
+It never shadows the daily Ollama.app (separate command name, port `11436` vs `11434`, and
+models dir). The wrapper clears inherited `OLLAMA_*` env, runs `serve` in the background, and
+passes other subcommands through to the frozen binary. No launchd, no models pulled at
+activation.
+
+### Packages
+
+| Name | Description |
+|---|---|
+| `ollama-imagegen` | `writeShellApplication` wrapper over the frozen Ollama 0.32.5 derivation at `127.0.0.1:11436`; never a bare `ollama` |
+
+### Activation scripts
+
+| Name | Description |
+|---|---|
+| `createOllamaImagegenDirs` | Creates `~/.local/share/ollama-imagegen/models` and `~/.local/state/ollama-imagegen`; never pulls models |
+
+See [`ollama-imagegen.md`](./ollama-imagegen.md).
 
 ## Where to put new config
 

@@ -53,7 +53,7 @@ add machine-specific packages and services as needed.
   # Machine-specific packages, session variables, services, etc.
   # Examples:
   #
-  # home.packages = with pkgs; [ ollama ];
+  # home.packages = with pkgs; [ awscli2 ];
   #
   # home.sessionVariables = {
   #   MY_VAR = "value";

@@ -25,12 +25,14 @@ modules/
   choragos.nix                     # Resolves store-built choragos-mcp binary; registers choragos_run_plan MCP tool + `choragos` CLI wrapper; programs.choragos.defaultProfile option (per-machine model profile) (oryp6/M1/M5)
   claude.nix                       # Deploys ~/.claude/CLAUDE.md + skills from agora flake input (Claude Code config; M1/M5 only)
   dev-tools.nix                    # Shared gh (programs.gh) + apm-cli (pinned GitHub Release binary); imported by oryp6 + M1 + M5 only
+  ollama-imagegen.nix              # Frozen Ollama 0.32.5 image-generation instance (ollama-imagegen wrapper, 127.0.0.1:11436); aarch64-darwin only; M1/M5
+  ollama-imagegen/ollama-imagegen.sh # Wrapper logic (start/stop/status/logs/help; everything else passes through to the frozen binary)
   linux.nix                        # Linux-only: nixGL wrapper (opt-in), .desktop file
   darwin.nix                       # macOS-only: placeholder for Darwin-specific config
   machines/
     oryp6.nix                      # oryp6-only: rootless Docker, systemd service; choragos.defaultProfile + AI_CODING_MODEL_PROFILE = opencode-free
-    m1.nix                         # M1-only: launchd corpus watcher; AI_CODING_MODEL_PROFILE = bedrock-sonnet
-    m5.nix                         # M5-only: Ollama provider config, local agent override; AI_CODING_MODEL_PROFILE = bedrock-sonnet
+    m1.nix                         # M1-only: launchd corpus watcher; AI_CODING_MODEL_PROFILE = bedrock-sonnet; imports ollama-imagegen.nix
+    m5.nix                         # M5-only: Ollama provider config, local agent override; AI_CODING_MODEL_PROFILE = bedrock-sonnet; imports ollama-imagegen.nix
     parallels-ubuntu.nix           # parallels-ubuntu-only: colleague guest-VM baseline; imports choragos/cerebrum/athenaeum/argus/pavo; gh enabled directly (no dev-tools.nix, apm is broken on aarch64-linux); AI_CODING_MODEL_PROFILE = opencode-free
 opencode/AGENTS.md                 # Machine-wide OpenCode agent instructions
 opencode/skills/*/SKILL.md         # OpenCode skills deployed to ~/.config/opencode/skills/
@@ -85,6 +87,8 @@ would only be needed if a target ever migrated to NixOS. `parallels-ubuntu`
 enables `gh` directly in its own machine module instead — `apm`'s prebuilt
 binary is broken on aarch64-linux, so `dev-tools.nix` is never imported there.
 
+Fast-moving AI tools used daily (Ollama.app, OpenCode) are installed and updated by the user with their own updaters, not via home-manager/Nix/brew, because package managers lag several versions behind and that has caused problems before. That rule does not apply to a deliberately frozen, hash-pinned, single-purpose artifact: such an artifact (here Ollama 0.32.5 as `ollama-imagegen`) should be managed declaratively by home-manager, because automating its many manual steps is the point and staying behind is intentional. It must never shadow or interfere with the daily tool (separate command name, port and models dir). `ollama-imagegen` exists only on M1 and M5 (aarch64-darwin); oryp6 does not get the command and reaches the M5 instance only through `ollama-tunnel`. See [`docs/ollama-imagegen.md`](docs/ollama-imagegen.md).
+
 ### Optional-module matrix
 
 | Module | oryp6 | M1 | M5 | parallels-ubuntu |
@@ -96,6 +100,7 @@ binary is broken on aarch64-linux, so `dev-tools.nix` is never imported there.
 | `pavo.nix` | yes | yes | yes | yes |
 | `dev-tools.nix` (gh + apm) | yes | yes | yes | no (gh enabled directly) |
 | `claude.nix` / `claude-mcp.nix` | no | yes | yes | no |
+| `ollama-imagegen.nix` | no | yes | yes | no |
 | `nvimCheckoutDir` (live-edit nvim symlinks) | yes | yes | yes | no |
 
 Machine identity (`home.username`, `home.homeDirectory`, `home.stateVersion`) is
@@ -285,6 +290,7 @@ home.packages = with pkgs; [
 | `cerebrum` | MCP server (bare binary via `programs.cerebrum.binPath`) | `modules/cerebrum.nix` | Two-tier agent memory (Synapse + Cortex); all machines; all agents; lazy Ollama startup |
 | `gh` | Program (`programs.gh`) | `modules/dev-tools.nix` | GitHub CLI; oryp6 + M1 + M5 |
 | `apm` | Package (`apm-cli`) | `modules/dev-tools.nix` | Microsoft Agent Package Manager; prebuilt GitHub Release binary pinned to v0.26.0; oryp6 + M1 + M5 |
+| `ollama-imagegen` | Wrapper (`home.packages`) + frozen derivation | `modules/ollama-imagegen.nix` | Frozen Ollama 0.32.5 image-generation instance on `127.0.0.1:11436`; own models/state dirs; clears inherited `OLLAMA_*`; M1 + M5 only (aarch64-darwin); oryp6 reaches it via `ollama-tunnel` |
 
 ---
 
