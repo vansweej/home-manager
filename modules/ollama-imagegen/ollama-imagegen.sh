@@ -6,9 +6,9 @@
 # Isolate from the daily Ollama: clear EVERY inherited OLLAMA_* variable so a
 # `launchctl setenv OLLAMA_HOST=0.0.0.0`, OLLAMA_ORIGINS, OLLAMA_KEEP_ALIVE,
 # etc. cannot leak into this frozen instance.
-while IFS= read -r _v; do
+for _v in "${!OLLAMA_@}"; do
   unset "$_v"
-done < <(compgen -v OLLAMA_ || true)
+done
 
 export OLLAMA_HOST="$IG_HOST"
 export OLLAMA_MODELS="$IG_MODELS"
