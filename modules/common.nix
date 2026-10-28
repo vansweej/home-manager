@@ -17,6 +17,7 @@
     # CLI utilities
     htop
     tree
+    jq
 
     # JavaScript runtime (used by opencode pipeline and skill-retrieval tools)
     bun
@@ -65,6 +66,15 @@
     initExtra = ''
       unset __HM_SESS_VARS_SOURCED
       . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"
+      _opencode_auth_json="$HOME/.local/share/opencode/auth.json"
+      if [ -r "$_opencode_auth_json" ]; then
+        _github_copilot_token="$(${pkgs.jq}/bin/jq -r '.["github-copilot"].access // empty' "$_opencode_auth_json" 2>/dev/null)"
+        if [ -n "$_github_copilot_token" ]; then
+          export GITHUB_COPILOT_TOKEN="$_github_copilot_token"
+        fi
+        unset _github_copilot_token
+      fi
+      unset _opencode_auth_json
     '';
   };
 
