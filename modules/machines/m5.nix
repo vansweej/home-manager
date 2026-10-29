@@ -73,6 +73,11 @@ in
     email = "vansweej@gmail.com";
   };
 
+  # Allow `#` comments in interactive zsh sessions (off by default in zsh).
+  programs.zsh.initContent = ''
+    setopt interactivecomments
+  '';
+
   # M5 MacBook-specific configuration.
 
   home.packages = with pkgs; [

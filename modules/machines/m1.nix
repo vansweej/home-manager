@@ -36,6 +36,11 @@ in
     email = "vansweej@gmail.com";
   };
 
+  # Allow `#` comments in interactive zsh sessions (off by default in zsh).
+  programs.zsh.initContent = ''
+    setopt interactivecomments
+  '';
+
   # Override the shared opencode.json (deployed by opencode.nix) with a static
   # file that merges the athenaeum MCP overlay onto the upstream config.
   # NOTE: if ~/.config/opencode/opencode.json already exists as a plain file,
