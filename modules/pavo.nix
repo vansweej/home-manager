@@ -71,7 +71,7 @@ in
         --exclude='log/' \
         --exclude='tmp/' \
         "${pavoSrc}/" "${deployDir}/"
-      $DRY_RUN_CMD ${pkgs.coreutils}/bin/cp /dev/stdin "${stampFile}" <<< "$currentSrc"
+      $DRY_RUN_CMD ${pkgs.coreutils}/bin/printf '%s' "$currentSrc" > "${stampFile}"
     fi
   '';
 }
