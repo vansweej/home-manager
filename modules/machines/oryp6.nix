@@ -11,11 +11,11 @@ let
   baseConfig = builtins.fromJSON (builtins.readFile "${aiCodingPkg}/opencode.json");
   modelOverlay = {
     agent = {
-      brainstorm = { model = "github-copilot/claude-opus-4.8"; };
-      spar       = { model = "github-copilot/claude-opus-4.8"; };
-      teach      = { model = "github-copilot/claude-opus-4.8"; };
-      plan       = { model = "github-copilot/claude-opus-4.8"; };
-      explore    = { model = "github-copilot/claude-opus-4.8"; };
+      brainstorm = { model = "github-copilot/claude-opus-5.5"; };
+      spar       = { model = "github-copilot/claude-opus-5.5"; };
+      teach      = { model = "github-copilot/claude-opus-5.5"; };
+      plan       = { model = "github-copilot/claude-opus-5.5"; };
+      explore    = { model = "github-copilot/claude-opus-5.5"; };
     };
   };
   oryp6OpencodeConfig = builtins.toJSON (
