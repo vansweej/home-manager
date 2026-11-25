@@ -8,11 +8,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795627480,
-        "narHash": "sha256-UisnZ/36IykCLERLZ0UGVo3N1ZEEAL1+iv1Q1s9bMnc=",
+        "lastModified": 1795632104,
+        "narHash": "sha256-1U8Rz7gmZEDY0tEvoKZ8FVFTF7zmxokEUjjGzvgrLo8=",
         "owner": "vansweej",
         "repo": "agora",
-        "rev": "91b86512e18aecc98cbb509373111504e7f7ec07",
+        "rev": "99fba880e207ca85ee7a543d27d0fcc69d90a898",
         "type": "github"
       },
       "original": {
@@ -29,11 +29,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795019122,
-        "narHash": "sha256-UjNbQfaG/wkqMmu4OiPK5Irt+nQGKy+MODrssaZs2dc=",
+        "lastModified": 1795632112,
+        "narHash": "sha256-4/Je71DZuVAxTBsWAIs770ycqIGcvCaOzaCl0tBMHq4=",
         "owner": "vansweej",
         "repo": "ai-coding",
-        "rev": "137785d26fea4b14666f4bbdf05e5b607709e406",
+        "rev": "33610df9c2b1747effd17c00695c6260e0f450d3",
         "type": "github"
       },
       "original": {
