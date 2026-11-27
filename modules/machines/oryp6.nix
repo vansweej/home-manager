@@ -112,7 +112,7 @@ in
   # systemd journal (journalctl --user -u athenaeum-watch).
   systemd.user.services.athenaeum-watch = {
     Unit = {
-      Description = "Athenaeum corpus watcher (reingest on PDF/EPUB change)";
+      Description = "Athenaeum corpus watcher (reingest on PDF/EPUB/Markdown/Word change)";
       After = [ "default.target" ];
     };
     Service = {

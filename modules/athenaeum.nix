@@ -102,14 +102,14 @@ in
   # No --workdir: athenaeum-ingest now self-locates its LanceDB store in-binary
   # (crates/core/src/config.rs's default_data_dir), so its cwd no longer matters
   # for correctness. No --exts filter: any change triggers a full reingest;
-  # athenaeum-ingest's own discovery filters to .pdf/.epub.
+  # athenaeum-ingest's own discovery filters to .pdf/.epub/.md/.markdown/.docx.
   config.programs.athenaeum.watchCommand =
     "${pkgs.watchexec}/bin/watchexec "
     + "--watch ${config.programs.athenaeum.watchDir} "
     + "--debounce 5s "
     + "--postpone "
     + "--on-busy-update queue "
-    + "-- ${athenaeumPkg}/bin/athenaeum-ingest ${config.programs.athenaeum.watchDir} --recursive --verbose";
+    + "-- ${athenaeumPkg}/bin/athenaeum-ingest ${config.programs.athenaeum.watchDir} --recursive --verbose --prune";
 
   # Only the ingest CLI and watchexec land on PATH; the MCP server is wired into
   # OpenCode via the absolute store path in opencodeOverlay below, so it is
@@ -132,7 +132,7 @@ in
 
     # Disable the athenaeum tools globally, then enable them only on the primary
     # thinking agents. Tool names are prefixed with the server name, so the glob
-    # "athenaeum*" matches athenaeum_search and athenaeum_ingest_file.
+    # "athenaeum*" matches athenaeum_search, athenaeum_ingest_file, athenaeum_list_documents and athenaeum_delete_document.
     tools = {
       "athenaeum*" = false;
     };
@@ -143,7 +143,7 @@ in
       spar = { tools = { "athenaeum*" = true; }; };
       teach = { tools = { "athenaeum*" = true; }; };
       plan = { tools = { "athenaeum*" = true; }; };
-      explore = { tools = { "athenaeum*" = true; }; };
+      explore = { tools = { "athenaeum*" = true; "athenaeum_delete_document" = false; }; };
     };
   };
 }
